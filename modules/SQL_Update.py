@@ -48,6 +48,9 @@ def Update_other(tab_name, tab_items, us, pas):
         cursor = conn.cursor()
         sql = f"UPDATE Product set Stock={stk} where ProdID='{pid}';"
         cursor.execute(sql)
+        aa = cursor.fetchone()[0]-stk
+        sql = f"UPDATE Product set Stock={aa} where ProdID='{pid}';"
+        cursor.execute(sql)
         conn.commit()
         conn.close()
 
