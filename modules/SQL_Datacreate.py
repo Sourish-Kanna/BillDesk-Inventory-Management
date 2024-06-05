@@ -1,11 +1,14 @@
 #SQL_Datacreate Source Code
 import mysql.connector
-DBname:str = "project"
+
 
 def SQLTAB(us, pas):
     """Create SQL Table"""
     # Create tables
-    conn = mysql.connector.connect(host="localhost", user=us, passwd=pas, database=DBname)
+    conn = mysql.connector.connect(host="localhost",
+                                   user=us,
+                                   passwd=pas,
+                                   database="projectold")
     cursor = conn.cursor()
     sql = 'CREATE TABLE supplier( SuppID CHAR(3) PRIMARY KEY NOT NULL, SuppName VARCHAR(250) NOT NULL DEFAULT ' \
           '\'Supplier\', Addr VARCHAR(250) DEFAULT \'No Address\', Phone VARCHAR(15) NOT NULL , Email VARCHAR(250) ' \
@@ -17,13 +20,9 @@ def SQLTAB(us, pas):
           '\'18.00\', Unit ENUM(\'Kgs\',\'Nos\') NOT NULL DEFAULT \'Kgs\' , Stock INT NOT NULL, Hide ENUM(\'Y\',' \
           '\'N\') NOT NULL DEFAULT \'N\'); '
     cursor.execute(sql)
-    sql = 'CREATE TABLE cust(CustID CHAR(3) NOT NULL PRIMARY KEY, Name VARCHAR(50) NOT NULL DEFAULT ' \
-          '\'Customer\', Qty INT NOT NULL, Balance FLOAT NOT NULL, Total FLOAT NOT NULL); '
-    cursor.execute(sql)
-    sql = 'CREATE TABLE bill(BillID CHAR (12) NOT NULL PRIMARY KEY, CustID CHAR(3) NOT NULL ,FOREIGN KEY (CustID) ' \
-          'REFERENCES cust(CustID), Type ENUM(\'Cash\', \'Credit\') NOT NULL, Date DATETIME NOT NULL, ' \
-          'Qty INT NOT NULL, Amt FLOAT NOT NULL, Disc FLOAT NOT NULL DEFAULT \'0.00\', Total FLOAT NOT NULL, ' \
-          'Balance FLOAT NOT NULL); '
+    sql = 'CREATE TABLE bill(BillID CHAR (12) NOT NULL PRIMARY KEY, CustID CHAR(3) NOT NULL, Name VARCHAR(20) NOT ' \
+          'NULL DEFAULT \'Customer\', Date DATETIME NOT NULL, Qty INT NOT NULL, Amt FLOAT NOT NULL, Disc FLOAT NOT ' \
+          'NULL DEFAULT \'0.00\' , Total FLOAT NOT NULL);'
     cursor.execute(sql)
     sql = 'CREATE TABLE billdetail(BillID CHAR (12) NOT NULL, FOREIGN KEY (BillID) REFERENCES bill(BillID), ' \
           'ProdID CHAR(6) NOT NULL, FOREIGN KEY (ProdID) REFERENCES product(ProdID), Qty INT NOT NULL, Total Float ' \
@@ -35,10 +34,12 @@ def SQLTAB(us, pas):
 
 def SQL(us, pas):
     """Create SQL Database"""
-    conn = mysql.connector.connect(host="localhost", user=us, passwd=pas)
+    conn = mysql.connector.connect(host="localhost",
+                                   user=us,
+                                   passwd=pas)
     cursor = conn.cursor()
-    cursor.execute("DROP database IF EXISTS project")
-    sql = "CREATE database project;"
+    cursor.execute("DROP database IF EXISTS projectold")
+    sql = "CREATE database projectold;"
     cursor.execute(sql)
     conn.commit()
     conn.close()
@@ -47,17 +48,20 @@ def SQL(us, pas):
 
 def del_sql(us, pas):
     """Delete SQL Database"""
-    conn = mysql.connector.connect(host="localhost", user=us, passwd=pas)
+    conn = mysql.connector.connect(host="localhost",
+                                   user=us,
+                                   passwd=pas)
     cursor = conn.cursor()
-    cursor.execute("DROP database IF EXISTS project")
+    cursor.execute("DROP database IF EXISTS projectold")
     conn.commit()
     conn.close()
 
 
 if __name__ == '__main__':
     from SQL_TPass import Pass
-    pas, us = ("Ramsour1_2003","root")#Pass()
+    pas, us = Pass()
     if pas==None:
+        print('Wrong Password')
         from time import sleep
         sleep(2.5)
         raise SystemExit

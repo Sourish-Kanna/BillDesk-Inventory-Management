@@ -24,15 +24,14 @@ def Pdf(BillID, us, pas):
     BillID = BillID.upper()
 
     # MySql Part
-    demodb = connect(host="localhost", user=us, passwd=pas, database="project")
+    demodb = connect(host="localhost", user=us, passwd=pas, database="projectold")
     cursor = demodb.cursor()
 
     cursor.execute(f"SELECT Date FROM bill WHERE bill.BillID='{BillID}';")
     for i in cursor:
         billtime = str(i[0]).split()
 
-    cursor.execute(f"SELECT  cust.CustID, cust.Name FROM cust,bill WHERE bill.BillID='{BillID}' AND "
-                   f"cust.CustID=bill.CustID ;")
+    cursor.execute(f"SELECT CustID,Name FROM bill WHERE bill.BillID='{BillID}';")
     for i in cursor:
         CustID = i[0]
         CustName = i[1]
@@ -78,11 +77,7 @@ def Pdf(BillID, us, pas):
     demodb.close()
 
     # Page Creation
-    if __name__ == "__main__":
-        filename = str(f'../Bills/Invoice {BillID}.pdf')
-    else:
-        filename = str(f'Bills/Invoice {BillID}.pdf')
-    document = canvas.Canvas(f"{filename}", pagesize=A4)
+    document = canvas.Canvas(f"{str(f'Invoice {BillID}.pdf')}", pagesize=A4)
     styles = getSampleStyleSheet()
     width, height = A4
     styleN = styles["BodyText"]
@@ -100,11 +95,10 @@ def Pdf(BillID, us, pas):
         return x, y
 
     # Variables
-    title = f'A. Somasundara Nadar & Co.'
+    title = 'A. Somasundara Nadar & Co.'
     cont = f'Ph. No 04634-240430'
     add = f'GSTIN : 27AACCA8432H1ZQ'
-    bye = f'Thank You for shopping. See you Again!'
-    btype = f'1'
+    bye = 'Thank You for shopping. See you Again!'
 
     disc = BillDisc
     tot = BillAmt
@@ -515,7 +509,7 @@ if __name__ == '__main__':
         from time import sleep
         sleep(2.5)
         raise SystemExit
-    demodb = connect(host="localhost", user=us, passwd=pas, database="project")
+    demodb = connect(host="localhost", user=us, passwd=pas, database="projectold")
     cursor = demodb.cursor()
     cursor.execute(f"SELECT BillID FROM bill")
     for i in cursor:

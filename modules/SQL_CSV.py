@@ -1,7 +1,7 @@
-# SQL_CSV Source Code
+#SQL_CSV Source Code
 import csv
 from mysql.connector import connect
-DBname:str = "project"
+
 
 def New_csv():
     with open("Details.csv", "w", newline='') as file:
@@ -39,7 +39,7 @@ def Read_csv(us, pas):
     lst = dict()
     lst1 = dict()
 
-    demodb = connect(host="localhost", user=us, passwd=pas, database=DBname)
+    demodb = connect(host="localhost", user=us, passwd=pas, database="projectold")
     cursor = demodb.cursor()
     cursor.execute(f"SELECT SuppID,SuppName FROM supplier;")
     for i in cursor:
@@ -50,7 +50,6 @@ def Read_csv(us, pas):
         lst1[i[1]] = i[0]
 
     demodb.close()
-
     for i in file:
         if i[0] == 'SuppName':
             continue
@@ -61,10 +60,10 @@ def Read_csv(us, pas):
         i[4] = i[4].title()
         i[5] = float(i[5])
         i[6] = float(i[6])
-        if len(i[7]) == 1:
-            i[7] = '0' + str(float(i[7])) + '0'
-        elif len(i[7]) == 2:
-            i[7] = str(float(i[7])) + '0'
+        if len(i[7])==1:
+            i[7] = '0'+str(float(i[7]))+'0'
+        elif len(i[7])==2:
+            i[7] = str(float(i[7]))+'0'
         i[8] = i[8].title()
         i[9] = int(i[9])
 
@@ -95,15 +94,31 @@ def Read_csv(us, pas):
     Delfile()
 
 
+def Export_csv(us, pas):
+    with open("Export.csv", "w", newline='') as file:
+        file = csv.writer(file)
+        demodb = connect(host="localhost", user=us, passwd=pas, database="projectold")
+        cursor = demodb.cursor()
+        cursor.execute(f"SELECT supplier.SuppName,supplier.Addr,supplier.Phone,supplier.Email, "
+                       f"product.Name, product.CP, product.SP, product.GST, product.Unit, "
+                       f"product.Stock FROM supplier,product where supplier.SuppID=product.SuppID;")
+        file.writerow(['SuppName', 'SuppAdd', 'SuppPhone', 'SuppEmail',
+                       'ProdName', 'CP', 'SP', 'GST',
+                       'Unit', 'Stock'])
+        for i in cursor:
+            file.writerow(i)
+        demodb.close()
+
+
 if __name__ == '__main__':
-    ch = input('1]Create\n2]Read\nChoice:')
-    if ch == '1':
-        New_csv()
-    elif ch == '2':
-        from SQL_TPass import Pass
-        pas, us = Pass()
-        if pas == None:
-            from time import sleep
-            sleep(2.5)
-            raise SystemExit
-        Read_csv(us, pas)
+    #New_csv()
+    from SQL_TPass import Pass
+    pas, us = Pass()
+    if pas==None:
+        print('Wrong Password')
+        from time import sleep
+        sleep(2.5)
+        raise SystemExit
+    #Read_csv(us,pas)
+    Export_csv(us, pas)
+    print('created')

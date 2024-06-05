@@ -1,28 +1,30 @@
-# SQL_Entry Source Code
+#SQL_Entry Source Code
 import mysql.connector
-DBname:str = "project"
+
 
 def Create(tab_name, tab_items, us, pas):
     """Create MySQL Tables
 
     Tuple Order :-
-    1] supplier   --> (SuppID, SuppName, SuppAdd, SuppPhone, SuppEmail)
-    2] product    --> (SuppID, ProdID, ProdName, ProdCost, ProdRate, ProdGST, ProdUnit, ProdStock )
-    3] bill       --> (BillNos, CustID, Type, BillDate, Billser, BillAmt, BillDisc, BillNet,Balance)
-    4] billdetail --> (BillNos, ProdID, ProdQty, Prodtot, Billser)
-    5] cust       --> (CustID, CustName, Qty, Balance, Total)"""
-    if tab_name == 0: # All Print
-        conn = mysql.connector.connect(host="localhost", user=us, passwd=pas, database=DBname)
+    supplier   --> (SuppID, SuppName, SuppAdd, SuppPhone, SuppEmail)
+    product    --> (SuppID, ProdID, ProdName)
+    bill       --> (BillNos, CustID, CustName, BillDate, BillAmt, BillDisc, BillNet)
+    billdetail --> (BillNos, ProdID, ProdQty, Prodtot, Billser)"""
+    if tab_name == 0:
+        conn = mysql.connector.connect(host="localhost",
+                                       user=us,
+                                       passwd=pas,
+                                       database="projectold")
         cursor = conn.cursor()
         abc = ("SELECT * FROM supplier;", "SELECT * FROM product;",
-               "SELECT * FROM bill;", "SELECT * FROM billdetail;", "SELECT * FROM cust;")
+               "SELECT * FROM bill;", "SELECT * FROM billdetail;")
 
         for i in abc:
             cursor.execute(i)
             print(cursor)
-            lst = cursor.fetchall()
-            ab = cursor.rowcount
-            for a in range(0, ab):
+            lst=cursor.fetchall()
+            ab=cursor.rowcount
+            for a in range(0,ab):
                 print(lst[a])
             print()
 
@@ -30,7 +32,10 @@ def Create(tab_name, tab_items, us, pas):
 
     elif tab_name == 1:  # supplier
         SuppID, SuppName, SuppAdd, SuppPhone, SuppEmail = tab_items
-        conn = mysql.connector.connect(host="localhost", user=us, passwd=pas, database=DBname)
+        conn = mysql.connector.connect(host="localhost",
+                                       user=us,
+                                       passwd=pas,
+                                       database="projectold")
         cursor = conn.cursor()
         sql = f"INSERT INTO supplier(SuppID,SuppName,Addr,Phone,Email) " \
               f"VALUES ('{SuppID}','{SuppName}','{SuppAdd}','{SuppPhone}','{SuppEmail}');"
@@ -40,27 +45,36 @@ def Create(tab_name, tab_items, us, pas):
 
     elif tab_name == 2:  # product
         SuppID, ProdID, ProdName, ProdCost, ProdRate, ProdGST, ProdUnit, ProdStock = tab_items
-        conn = mysql.connector.connect(host="localhost", user=us, passwd=pas, database=DBname)
+        conn = mysql.connector.connect(host="localhost",
+                                       user=us,
+                                       passwd=pas,
+                                       database="projectold")
         cursor = conn.cursor()
-        sql = f"INSERT INTO product(SuppID,ProdID,Name,CP,SP,GST,Unit,Stock) " \
-              f"VALUES ('{SuppID}','{ProdID}','{ProdName}',{ProdCost},{ProdRate},'{ProdGST}','{ProdUnit}',{ProdStock}); "
+        sql = f"INSERT INTO product(SuppID,ProdID,Name,CP,SP,GST,Unit,Stock) VALUES ('{SuppID}','{ProdID}','{ProdName}"\
+              f"',{ProdCost},{ProdRate},'{ProdGST}','{ProdUnit}',{ProdStock}); "
         cursor.execute(sql)
         conn.commit()
         conn.close()
 
     elif tab_name == 3:  # bill
-        BillNos, CustID, Type, BillDate, Billser, BillAmt, BillDisc, BillNet, Balance = tab_items
-        conn = mysql.connector.connect(host="localhost", user=us, passwd=pas, database=DBname)
+        BillNos, CustID, CustName, BillDate, Billser, BillAmt, BillDisc, BillNet = tab_items
+        conn = mysql.connector.connect(host="localhost",
+                                       user=us,
+                                       passwd=pas,
+                                       database="projectold")
         cursor = conn.cursor()
-        sql = f"INSERT INTO bill(BillID,CustID,Type,Date,Qty,Amt,Disc,Total,Balance) " \
-              f"VALUES ('{BillNos}','{CustID}','{Type}','{BillDate}',{Billser}, {BillAmt},{BillDisc},{BillNet}, {Balance});"
+        sql = f"INSERT INTO bill(BillID,CustID,Name,Date,Qty,Amt,Disc,Total) " \
+              f"VALUES ('{BillNos}','{CustID}','{CustName}','{BillDate}',{Billser}, {BillAmt},{BillDisc},{BillNet});"
         cursor.execute(sql)
         conn.commit()
         conn.close()
 
     elif tab_name == 4:  # billdetail
         BillNos, ProdID, ProdQty, Prodtot, Billser = tab_items
-        conn = mysql.connector.connect(host="localhost", user=us, passwd=pas, database=DBname)
+        conn = mysql.connector.connect(host="localhost",
+                                       user=us,
+                                       passwd=pas,
+                                       database="projectold")
         cursor = conn.cursor()
         sql = f"INSERT INTO billdetail(BillID,ProdID,Qty,Total,Serial) " \
               f"VALUES ('{BillNos}','{ProdID}','{ProdQty}','{Prodtot}','{Billser}');"
@@ -68,36 +82,16 @@ def Create(tab_name, tab_items, us, pas):
         conn.commit()
         conn.close()
 
-    elif tab_name == 5:  # cust
-        CustID, CustName, Qty, Balance, Total = tab_items
-        conn = mysql.connector.connect(host="localhost", user=us, passwd=pas, database=DBname)
-        cursor = conn.cursor()
-        sql = f"select * from cust where CustID='{CustID}';"
-        cursor.execute(sql)
-        lst = cursor.fetchall()
-        if lst==[]:
-            sql = f"INSERT INTO cust(CustID,Name,Qty,Balance,Total) "\
-                  f"VALUES ('{CustID}','{CustName}','{Qty}','{Balance}','{Total}');"
-            cursor.execute(sql)
-            conn.commit()
-        else:
-            Qty = lst[0][2]+Qty
-            Balance = lst[0][3]+Balance
-            Total = lst[0][4]+Total
-            sql = f"UPDATE cust set Qty='{Qty}',Balance='{Balance}',Total='{Total}' where CustID ='{CustID}';"
-            cursor.execute(sql)
-            conn.commit()
-        conn.close()
-
 
 if __name__ == '__main__':
     from SQL_TPass import Pass
     pas, us = Pass()
-    if pas == None:
+    if pas==None:
+        print('Wrong Password')
         from time import sleep
         sleep(2.5)
         raise SystemExit
-    a = int(input('0-View\n1-Supplierdetails\n2-Product\n3-Bill\n4-Billdetails\n5-custdetail\nNo: '))
+    a = int(input('0-View\n1-Supplierdetails\n2-Product\n3-Productdetails\n4-Billl\n5-Billdetails\nNo: '))
     if a == 0:
         Create(a, (), us, pas)
     else:

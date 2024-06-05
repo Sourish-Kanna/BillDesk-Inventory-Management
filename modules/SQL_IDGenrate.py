@@ -1,10 +1,9 @@
 #SQL_IDGenrate Source Code
 from mysql.connector import connect
-DBname:str = "project"
+
 
 def supp_gen(us, pas):
-    demodb = connect(host="localhost", user=us, passwd=pas, database=DBname)
-    SuppID:str = "S00"
+    demodb = connect(host="localhost", user=us, passwd=pas, database="projectold")
     cursor = demodb.cursor()
     cursor.execute(f"SELECT SuppID FROM supplier;")
     for i in cursor:
@@ -12,7 +11,6 @@ def supp_gen(us, pas):
             SuppID = 'S00'
         else:
             SuppID = max(i)
-    demodb.close()
 
     try:
         if SuppID[-1] == '9':
@@ -27,17 +25,16 @@ def supp_gen(us, pas):
         a = str(int(SuppID[-1]) + 1)
         b = str(int(SuppID[-2]))
         SuppID = 'S' + b + a
+    demodb.close()
     return SuppID
 
 
 def prod_gen(SuppID, us, pas):
-    demodb = connect(host="localhost", user=us, passwd=pas, database=DBname)
+    demodb = connect(host="localhost", user=us, passwd=pas, database="projectold")
     cursor = demodb.cursor()
-    ProdID:str = ""
     cursor.execute(f"SELECT ProdID FROM product WHERE SuppID = '{SuppID}'")
     for i in cursor:
         ProdID = i[-1]
-    demodb.close()
     try:
         if ProdID[0] == 'S':
             pass
@@ -52,18 +49,18 @@ def prod_gen(SuppID, us, pas):
         b = str(int(ProdID[-2]))
         ProdID = ProdID[0:4] + b + a
 
+    demodb.close()
     return ProdID
 
 
 def cust_gen(CustName, us, pas):
-    demodb = connect(host="localhost", user=us, passwd=pas, database=DBname)
+    demodb = connect(host="localhost", user=us, passwd=pas, database="projectold")
     cursor = demodb.cursor()
     lst = dict()
-    cursor.execute(f"SELECT CustID,Name FROM cust;")
+    cursor.execute(f"SELECT CustID,Name FROM bill;")
     for i in cursor:
         lst[i[1]] = i[0]
 
-    demodb.close()
     if CustName in lst:
         CustID = lst[CustName]
         Nomore = True
@@ -84,6 +81,7 @@ def cust_gen(CustName, us, pas):
             a = str(int(CustID[2]) + 1)
             b = str(int(CustID[1]))
             CustID = "C" + b + a
+    demodb.close()
     return CustID
 
 
@@ -91,6 +89,7 @@ if __name__ == '__main__':
     from SQL_TPass import Pass
     pas, us = Pass()
     if pas==None:
+        print('Wrong Password')
         from time import sleep
         sleep(2.5)
         raise SystemExit

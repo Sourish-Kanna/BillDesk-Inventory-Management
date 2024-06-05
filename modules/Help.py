@@ -1,7 +1,6 @@
 #Help window Source Code
 from tkinter import *
 ImgC = 0
-bgcol:str ="#add8e6"
 
 
 def Help():
@@ -17,35 +16,35 @@ def Help():
     root.geometry("660x440")
     root.title("Help")
     root.focus_force()
-    root.config(bg=bgcol)
+    root.config(bg='yellow')
     pat2='.png'
     root.attributes('-topmost', True)
 
-    img0  = ImageTk.PhotoImage(Image.open(f"{pat1}0{pat2}").resize((652,401),Image.Resampling.LANCZOS))
-    img1  = ImageTk.PhotoImage(Image.open(f"{pat1}1{pat2}").resize((652,401),Image.Resampling.LANCZOS))
-    img2  = ImageTk.PhotoImage(Image.open(f"{pat1}2{pat2}").resize((652,401),Image.Resampling.LANCZOS))
-    img3  = ImageTk.PhotoImage(Image.open(f"{pat1}3{pat2}").resize((652,401),Image.Resampling.LANCZOS))
-    img4  = ImageTk.PhotoImage(Image.open(f"{pat1}4{pat2}").resize((652,401),Image.Resampling.LANCZOS))
-    img5  = ImageTk.PhotoImage(Image.open(f"{pat1}5{pat2}").resize((652,401),Image.Resampling.LANCZOS))
-    img6  = ImageTk.PhotoImage(Image.open(f"{pat1}6{pat2}").resize((652,401),Image.Resampling.LANCZOS))
-    img7  = ImageTk.PhotoImage(Image.open(f"{pat1}7{pat2}").resize((652,401),Image.Resampling.LANCZOS))
-    img8  = ImageTk.PhotoImage(Image.open(f"{pat1}8{pat2}").resize((652,401),Image.Resampling.LANCZOS))
-    img9  = ImageTk.PhotoImage(Image.open(f"{pat1}9{pat2}").resize((652,401),Image.Resampling.LANCZOS))
-    img10 = ImageTk.PhotoImage(Image.open(f"{pat1}10{pat2}").resize((652,401),Image.Resampling.LANCZOS))
-    img11 = ImageTk.PhotoImage(Image.open(f"{pat1}11{pat2}").resize((652,401),Image.Resampling.LANCZOS))
-    img12 = ImageTk.PhotoImage(Image.open(f"{pat1}12{pat2}").resize((652,401),Image.Resampling.LANCZOS))
-    img13 = ImageTk.PhotoImage(Image.open(f"{pat1}13{pat2}").resize((652,401),Image.Resampling.LANCZOS))
-    img14 = ImageTk.PhotoImage(Image.open(f"{pat1}14{pat2}").resize((652,401),Image.Resampling.LANCZOS))
-    img15 = ImageTk.PhotoImage(Image.open(f"{pat1}15{pat2}").resize((652,401),Image.Resampling.LANCZOS))
-    img16 = ImageTk.PhotoImage(Image.open(f"{pat1}16{pat2}").resize((652,401),Image.Resampling.LANCZOS))
-    img17 = ImageTk.PhotoImage(Image.open(f"{pat1}17{pat2}").resize((652,401),Image.Resampling.LANCZOS))
-    img18 = ImageTk.PhotoImage(Image.open(f"{pat1}18{pat2}").resize((652,401),Image.Resampling.LANCZOS))
-    img19 = ImageTk.PhotoImage(Image.open(f"{pat1}19{pat2}").resize((652,401),Image.Resampling.LANCZOS))
-    img20 = ImageTk.PhotoImage(Image.open(f"{pat1}20{pat2}").resize((652,401),Image.Resampling.LANCZOS))
-    img21 = ImageTk.PhotoImage(Image.open(f"{pat1}21{pat2}").resize((652,401),Image.Resampling.LANCZOS))
+    img0  = ImageTk.PhotoImage(Image.open(f"{pat1}0{pat2}").resize((652,401),Image.ANTIALIAS))
+    img1  = ImageTk.PhotoImage(Image.open(f"{pat1}1{pat2}").resize((652,401),Image.ANTIALIAS))
+    img2  = ImageTk.PhotoImage(Image.open(f"{pat1}2{pat2}").resize((652,401),Image.ANTIALIAS))
+    img3  = ImageTk.PhotoImage(Image.open(f"{pat1}3{pat2}").resize((652,401),Image.ANTIALIAS))
+    img4  = ImageTk.PhotoImage(Image.open(f"{pat1}4{pat2}").resize((652,401),Image.ANTIALIAS))
+    img5  = ImageTk.PhotoImage(Image.open(f"{pat1}5{pat2}").resize((652,401),Image.ANTIALIAS))
+    img6  = ImageTk.PhotoImage(Image.open(f"{pat1}6{pat2}").resize((652,401),Image.ANTIALIAS))
+    img7  = ImageTk.PhotoImage(Image.open(f"{pat1}7{pat2}").resize((652,401),Image.ANTIALIAS))
+    img8  = ImageTk.PhotoImage(Image.open(f"{pat1}8{pat2}").resize((652,401),Image.ANTIALIAS))
+    img9  = ImageTk.PhotoImage(Image.open(f"{pat1}9{pat2}").resize((652,401),Image.ANTIALIAS))
+    img10 = ImageTk.PhotoImage(Image.open(f"{pat1}10{pat2}").resize((652,401),Image.ANTIALIAS))
+    img11 = ImageTk.PhotoImage(Image.open(f"{pat1}11{pat2}").resize((652,401),Image.ANTIALIAS))
+    img12 = ImageTk.PhotoImage(Image.open(f"{pat1}12{pat2}").resize((652,401),Image.ANTIALIAS))
+    img13 = ImageTk.PhotoImage(Image.open(f"{pat1}13{pat2}").resize((652,401),Image.ANTIALIAS))
+    img14 = ImageTk.PhotoImage(Image.open(f"{pat1}14{pat2}").resize((652,401),Image.ANTIALIAS))
+    img15 = ImageTk.PhotoImage(Image.open(f"{pat1}15{pat2}").resize((652,401),Image.ANTIALIAS))
+    img16 = ImageTk.PhotoImage(Image.open(f"{pat1}16{pat2}").resize((652,401),Image.ANTIALIAS))
+    img17 = ImageTk.PhotoImage(Image.open(f"{pat1}17{pat2}").resize((652,401),Image.ANTIALIAS))
+    img18 = ImageTk.PhotoImage(Image.open(f"{pat1}18{pat2}").resize((652,401),Image.ANTIALIAS))
+    img19 = ImageTk.PhotoImage(Image.open(f"{pat1}19{pat2}").resize((652,401),Image.ANTIALIAS))
+    img20 = ImageTk.PhotoImage(Image.open(f"{pat1}20{pat2}").resize((652,401),Image.ANTIALIAS))
+    img21 = ImageTk.PhotoImage(Image.open(f"{pat1}21{pat2}").resize((652,401),Image.ANTIALIAS))
 
-    img = [img0,img21,img1,img2,img3,img4,img5,img6,img7,img8,img9,img10,img11,img12,img13,
-           img14,img15,img16,img17,img18,img19,img20]
+    img = [img0,img21,img1,img2,img3,img4,img5,img6,img7,img5,img8,img9,img5,img10,img5,img11,
+           img12,img13,img14,img15,img16,img17,img18,img19,img20]
     
 
     def Exit():
@@ -77,7 +76,7 @@ def Help():
         else:
             l10.config(image=img[ImgC])
         
-    l10 = Label(root, image=img[ImgC], bg=bgcol)
+    l10 = Label(root, image=img[ImgC], bg="yellow")
     l10.grid(row=1, column=1, columnspan=2)
     button2 = Button(root, text="Next -->",width =12, command=Next)
     button2.grid(row=2, column=2, sticky="W")

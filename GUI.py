@@ -1,9 +1,6 @@
-# GUI Source Code
-
-print("# Update & Change SQL_Check, SQL_Entry & SQL_Update after Bill Module")
-
-""" Import Section """
+#GUI Source Code
 import modules.Install as Ins
+
 Ins.install()
 try:
     from modules.SQL_IDGenrate import supp_gen, prod_gen, cust_gen
@@ -14,72 +11,36 @@ from modules.SQL_Entry import Create
 from time import strftime as stime
 import mysql.connector as mysql
 from tkinter import messagebox
-import modules.SQL_Pass as Pas
 from datetime import datetime
 from modules.PDF import Pdf
 from tkinter import ttk
 from tkinter import *
 
+import modules.SQL_Pass as Pas
+pas,us=Pas.Pass()
 
-""" Constants """
-# pas, us = 'Ramsour1_2003', 'root'
-pas, us = Pas.Pass()
-bgcol:str = "#add8e6"
-text_format:tuple = ("arial", 14)
-unitlst:tuple = ('Select Unit', 'Kgs', 'Nos')
-button_format:dict = {"bg":"brown", "fg":"white", "font":text_format}
-DB:dict = {"user": us, "passwd": pas, "database": "project", "host": "localhost"}
-gstlst:tuple = ('Select GST Rate', '00.00 %', '05.00 %', '12.00 %', '18.00 %', '28.00 %')
-
-""" Working Lists """
-supplst: list[str] = [] # To select supplier in product add
-prodlst: list[str] = [] # To show Product in Bills
-prodname:dict = {} # {PID:Name} To Display in modify screen
-suppname:dict = {} # {SID:Name} To Display in modify screen
-prodqty:dict = {} # {PID:Qty}  To Check Avaible Stock
+supplst = ['Select Supplier']
+prodlst = ['Select Product']
+unitlst = ('Select Unit', 'Kgs', 'Nos')
+product = []
+supplier = []
+prodname = {}
+gstlst = ('Select GST Rate', '00.00 %', '05.00 %', '12.00 %', '18.00 %', '28.00 %')
 
 
-""" Other Functions """
-def Search(): # Search Window
-    return None
-
-def Helpwind(): # Help Window
-    import modules.Help
-    modules.Help.Help()
-
-def sql_data_create(): # Create database
-    from modules.SQL_Datacreate import SQL
-    SQL(us, pas)
-    sql_csv()
-    Update_lst(4)
-
-def exit_prog(): # Exit Program
-    ask_exit = messagebox.askquestion("Exit", "Do You Want To Exit Application ?")
-    if ask_exit == 'yes':
-        window.destroy()
-    else:
-        pass
-
-def printf(filename): # Print Bills
-    import os
-    os.startfile(filename, 'print')
-
-def PDF(Bill): # Genrate Bill
-    Pdf(Bill, us, pas)
-
-def sql_csv(): # Genrate CSV File
+def sql_csv_imp():
     cc = messagebox.askquestion("Bulk Data Entry", "Do you want to add Data from file?")
     if cc == 'yes':
         window1 = Tk()
         window1.title('Bulk Data Entry')
-        window1.config(bg=bgcol)
+        window1.config(bg='yellow')
         window1.focus_force()
         window1.iconbitmap(r'modules/1.ico')
         import modules.SQL_CSV as SQL0
 
         def imp():
             SQL0.Read_csv(us, pas)
-            Update_lst(4)
+            alist()
             window1.destroy()
 
         def cancel():
@@ -87,555 +48,70 @@ def sql_csv(): # Genrate CSV File
             window1.destroy()
 
         SQL0.New_csv()
-        
-        from os import startfile as strfile
-        strfile("Details.csv")
-
         f = f"\nFile Created. Now Enter Data and click on Import Data when done."
-        lab = Label(window1, text=f, bg=bgcol, font=text_format)
+        lab = Label(window1, text=f, bg='yellow', font=("arial", 14))
         lab.pack(padx=20)
         f = f"Only Supplier name is required for multiple products of same supplier."
-        lab1 = Label(window1, text=f, bg=bgcol, font=text_format)
+        lab1 = Label(window1, text=f, bg='yellow', font=("arial", 14))
         lab1.pack(pady=10, padx=20)
-        button0 = Button(window1, text="Import Data", **button_format, command=imp)
+        button0 = Button(window1, text="Import Data", bg="brown", fg="white",
+                         font=('arial', 14), command=imp)
         button0.pack(padx=10)
-        button1 = Button(window1, text="Cancel Import", **button_format, command=cancel)
+        button1 = Button(window1, text="Cancel Import", bg="brown", fg="white",
+                         font=('arial', 14), command=cancel)
         button1.pack(pady=10, padx=10)
 
-def Update_lst(what): # Genrate Alpha List
-    demodb = mysql.connect(**DB)
+
+def sql_csv_exp():
+    cc = messagebox.askquestion("Export Database", "Do you want to export database?")
+    if cc == 'yes':
+        import modules.SQL_CSV as SQL0
+        SQL0.Export_csv(us, pas)
+
+def Helpwind():
+    from modules.Help import Help
+    Help()
+
+def alist():
+    global supplst, prodlst, prodname, product
+    demodb = mysql.connect(host="localhost", user=us, passwd=pas, database="projectold")
     cursor = demodb.cursor()
-    
-    global supplst, prodlst, prodname, suppname, prodqty
-    prodname = {}
-    prodqty = {}
-    prodlst = ['Select Product']
+    cursor.execute(f"SELECT SuppID,SuppName FROM supplier where Hide='N'")
+    supplier = list(cursor.fetchall())
     supplst = ['Select Supplier']
-    
-    if what==1: # supplier
-        cursor.execute(f"SELECT SuppID,SuppName FROM supplier where Hide='N'")
-        supplier = list(cursor.fetchall())
-        for i in supplier:
-            ABC = f'{i[0]} - {i[1]}'
-            suppname[i[0]] = i[1]
-            supplst.append(ABC)
-    elif what==2: # product
-        cursor.execute(f"SELECT ProdID,Name FROM product where Hide='N'")
-        product = list(cursor.fetchall())
-        for i in product:
-            prodname[i[0]] = i[1]
-    elif what==3: # bill
-        cursor.execute(f"select Name from product where Stock>0")
-        bill = list(cursor.fetchall())
-        for i in bill:
-            prodlst.append(i[0])
-    elif what==5: # Product Qty
-        cursor.execute(f"select ProdID, Stock from product where Stock>0")
-        Qty = list(cursor.fetchall())
-        for i in Qty:
-            prodqty[i[0]] = i[1]
-    elif what==4: # All
-        cursor.execute(f"SELECT SuppID,SuppName FROM supplier where Hide='N'")
-        supplier = list(cursor.fetchall())
-        for i in supplier:
-            ABC = f'{i[0]} - {i[1]}'
-            suppname[i[0]] = i[1]
-            supplst.append(ABC)
-        cursor.execute(f"SELECT ProdID,Name FROM product where Hide='N'")
-        product = list(cursor.fetchall())
-        for i in product:
-            prodname[i[0]] = i[1]
-        cursor.execute(f"select Name from product where Stock>0")
-        bill = list(cursor.fetchall())
-        for i in bill:
-            prodlst.append(i[0])
-        cursor.execute(f"select ProdID, Stock from product where Stock>0")
-        Qty = list(cursor.fetchall())
-        for i in Qty:
-            prodqty[i[0]] = i[1]
-        
+    for i in supplier:
+        ABC = f'{i[0]} - {i[1]}'
+        supplst.append(ABC)
+
+    cursor.execute(f"SELECT ProdID,Name FROM product where Hide='N'")
+    product = list(cursor.fetchall())
+    prodname = {}
+    prodlst = ['Select Product']
+    for i in product:
+        ABC = f'{i[0]} - {i[1]}'
+        prodname[i[0]] = i[1]
+        prodlst.append(ABC)
+
     demodb.close()
 
-def Main(): # Home Screen
-    option = {1: Main_Add, 2: Main_Mod, 3: Bill, 4: Main_View}
 
-    right.grid(column=0,row=1,padx=0,pady=0)
-    right0 = Frame(right, bd=2, relief=SOLID, padx=50, pady=50)
-    right0.pack(pady=20)
-    lab = Label(window, text="A. Somasundara Nadar & Co.", bg=bgcol, font=("arial-bold", 25))
-    lab.grid(column=0,row=0,ipadx=275,ipady=20)
-    
-    def Comon(v):
-        right0.destroy()
-        dictt = option.get(v)
-        dictt()
-        lab.destroy()
+def sql_data_create():
+    from modules.SQL_Datacreate import SQL
+    SQL(us, pas)
+    sql_csv_imp()
+    alist()
 
-    b0 = Button(right0, text="Add", width=12, **button_format, command=lambda *args: Comon(1))
-    b0.grid(row=0, column=0, padx=10, pady=10)
-    b1 = Button(right0, text="Modify", width=12, **button_format, command=lambda *args: Comon(2))
-    b1.grid(row=1, column=0, padx=10, pady=10)
-    b3 = Button(right0, text="View", width=12, **button_format, command=lambda *args: Comon(4))
-    b3.grid(row=2, column=0, padx=10, pady=5)
-    b2 = Button(right0, text="Bill", width=12, **button_format, command=lambda *args: Comon(3))
-    b2.grid(row=3, column=0, padx=10, pady=10)
-    b4 = Button(right0, text="Exit", **button_format, width=12, command=exit_prog)
-    b4.grid(row=4, column=0, padx=10, pady=5)
 
-def Bill(): # Billing mode
-    right.place(x=75, y=35)
-    right1 = Frame(right, bd=2, relief=SOLID, padx=20, pady=20)
-    right1.pack()
-    down = Frame(right1, bd=1, relief=SOLID)
-    down.grid(row=1, column=1, sticky=W, pady=5)
-    side = Frame(right1)
-    side.grid(row=0, column=0, rowspan=2)
-    up = Frame(right1)
-    up.grid(row=0, column=1, sticky=W)
-    demodb = mysql.connect(**DB)
-    cursor = demodb.cursor()
-    time = datetime.now()
-    Date = str(time.strftime("%y""%m""%d"))
-    cursor.execute(f"SELECT COUNT(BillID) FROM bill WHERE BillID LIKE '%{Date}%';")
-    D:int = cursor.fetchone()[0] + 1
-    demodb.close()
-    a = [1, '0', (), '', []]  # [Bill Serial No., Selected Display No., Selected Tuple List, Bill ID, deleted items]
-    CName = StringVar()  # Customer Name
-    PQty = StringVar()  # Product Qty
-    Bdic = StringVar()  # Discount %
-    Bdisc = StringVar()  # Discount ₹
-    Btot = DoubleVar()  # Bill Before Dicount
-    Bnet = DoubleVar()  # Bill After Dicount
-    Bpay = StringVar()  # Bill Pay in Advance
-    rad = StringVar()  # Bill Payment Type
-    rad.set('Cash')
-    lst = list(prodlst)  # Master Product List
-    lst1 = []  # For Bill Detail Table in Database
-    lst2 = []  # Prod Stock For Updation
-    data = list(lst)  # ComboBox List
+def exit_prog():
+    ask_exit = messagebox.askquestion("Exit", "Do You Want To Exit Application ?")
+    if ask_exit == 'yes':
+        window.destroy()
+    else:
+        pass
 
-    def Close():
-        right1.destroy()
-        Main()
 
-    def clock():
-        stri = f"Time:\t{stime('%I:%M:%S %p')}"
-        label.config(text=stri)
-        label.after(1000, clock)
-
-    def ProdN(event):
-        value = event.widget.get()
-        if value == '' or value == 'Select Product':
-            data = lst
-        else:
-            data = []
-            for item in lst:
-                if value.lower() in item.lower():
-                    data.append(item)
-        ePName.config(values=data)
-
-    def discount(event):
-        discount0()
-
-    def discount1(event):
-        if Bdic.get() == '':
-            a = 0.0
-        elif float(Bdic.get()) > 100.0:
-            messagebox.showerror("Negetive Ruprees", "Please Enter discount (%) between 0 to 100")
-            Bdic.set('0.0')
-            return
-        else:
-            a = float(Bdic.get())
-
-        if Btot.get() == '':
-            b = 0.0
-        else:
-            b = float(Btot.get())
-
-        try:
-            e = str(round((a * b) / 100, 2))
-        except ZeroDivisionError:
-            e = '0.0'
-        Bdisc.set(e)
-
-        BBnet = round(b - float(e), 2)
-        Bnet.set(BBnet)
-        eBnet.config(text=f"₹{Bnet.get()}")
-
-    def discount0():
-        if Bdisc.get() == '':
-            a = 0.0
-        else:
-            a = float(Bdisc.get())
-
-        if Btot.get() == '':
-            b = 0.0
-        else:
-            b = float(Btot.get())
-
-        try:
-            d = str(round((a * 100) / b, 2))
-        except ZeroDivisionError:
-            d = '0.0'
-        Bdic.set(d)
-
-        BBnet = b - a
-        Bnet.set(BBnet)
-        eBnet.config(text=f"₹{Bnet.get()}")
-
-    def Credit():
-        if rad.get() == 'Credit':
-            ePay.config(state="normal")
-            ePay.focus()
-        elif rad.get() == 'Cash':
-            ePay.config(state="disabled")
-            ePName.focus()
-
-    def Add():
-        if ePName.get() == 'Select Product':
-            messagebox.showerror("Select Product", "Please Select Product")
-            return
-
-        try:
-            Qty = int(PQty.get())
-        except ValueError:
-            messagebox.showerror("No Qty", "Please Enter Product Qty")
-            ePqty.focus()
-            return
-
-        try:
-            BBdisc = float(Bdisc.get())  # Bill discount ₹
-        except ValueError:
-            BBdisc = 0.0
-        PID=""
-        Name = ePName.get()  # Product Name
-        for ppid, pname in prodname.items():
-            if pname == Name:
-                PID = ppid  # Product ID
-
-        demodb = mysql.connect(**DB)
-        cursor = demodb.cursor()
-        cursor.execute(f"SELECT SP, GST, Unit, Stock FROM product where ProdID='{PID}'")
-        aa = cursor.fetchone()
-        demodb.close()
-        Pa = aa[0] * Qty  # Product Amt Before GST
-        Pgst = (Pa * float(aa[1])) / 100  # Product Amt After GST
-        Prodtot = float(round(Pa + Pgst, 2))  # Product total after GST
-        BBtot = Btot.get() + Prodtot  # Bill total after discount
-        BBnet = BBtot + BBdisc  # Bill total before discount
-        Bnet.set(BBnet)
-        Btot.set(BBtot)
-        eBtot.config(text=f"₹{Btot.get()}")
-        eBnet.config(text=f"₹{Bnet.get()}")
-        discount0()
-        if a[4] == []:  # Bill Serial No
-            ser = a[0]
-            a[0] += 1
-        else:
-            ser = a[4].pop(0)
-        tup = (ser, Name, Qty, aa[0], Prodtot, aa[1], aa[2])  # (ser,Name,qty,sp,amt,gst,unit)
-        lst1.append([PID, Qty, Prodtot, ser])  # [ProdID, Qty, Tot, ser)
-        lst2.append(aa[3])  # Stock
-        tv.insert('', 'end', values=tup)  # For Display Table
-        tv.yview_moveto(1)
-        lst.remove(Name)
-        ePName.focus()
-        if lst == ['Select Product']:
-            ePName.config(state="disabled")
-            ePqty.config(state="disabled")
-            eBdisc.focus()
-        ePName.config(values=lst)
-        PQty.set('')
-        ePName.current(0)
-
-    def Modify():
-        if tv.focus() == '':
-            return
-        selected = tv.focus()
-        if a[1] == selected:
-            tup = a[2]  # (ser,Name,qty,sp,amt,gst,unit)
-            abc = float(tup[4])  # Amount
-            tup[2] = PQty.get()  # Qty
-            lst1[(a[2][0]) - 1][1] = int(tup[2])
-            Pa = float(tup[3]) * float(tup[2])  # Amount Before GST
-            Pgst = (Pa * float(tup[5])) / 100  # GST Amount
-            tup[4] = round(Pa + Pgst, 2)  # Amount After GST
-            BBtot = Btot.get() - abc + tup[4]  # Bill Total Updated
-            Btot.set(BBtot)
-            eBtot.config(text=f"₹{Btot.get()}")
-            discount0()
-            a[1], a[2] = 0, 1
-            PQty.set('')
-            tv.item(selected, text="", values=tup)
-            button1.config(text='Edit Product')
-            ePqty.bind('<Return>', callback4)
-            ePName.focus()
-            return
-
-        a[1] = selected
-        a[2] = tv.item(selected)['values']
-        PQty.set(a[2][2])
-        ePqty.config(state='normal')
-        ePqty.focus()
-        button1.config(text='Save')
-        ePqty.bind('<Return>', callback6)
-
-    def Remve():
-        if tv.focus() == '':
-            return
-        x = tv.focus()
-        aa = tv.item(x)['values']  # (ser,Name,qty,sp,amt,gst,unit)
-        ba = int(aa[0]) - 1
-        lst.insert(1, aa[1])
-        lst1.pop(ba)
-        lst2.pop(ba)
-        a[4].append(aa[0])
-        BBtot = Btot.get() - float(aa[4])
-        BBnet = Bnet.get() - float(aa[4])
-        Btot.set(BBtot)
-        Bnet.set(BBnet)
-        eBtot.config(text=f"₹{Btot.get()}")
-        eBnet.config(text=f"₹{Bnet.get()}")
-        ePName.config(values=lst)
-        ePName.config(state="normal")
-        ePqty.config(state="normal")
-        ePName.focus()
-        ePName.current(0)
-        tv.delete(x)
-
-    def Clear():
-        right1.destroy()
-        Bill()
-
-    def Check():
-        if a[0] == 1:
-            return
-        CustName = CName.get()
-        if CustName == '':
-            messagebox.showerror("Unknown Customer", "Please Enter Customer Name")
-            eCName.focus()
-            return
-        CustID = cust_gen(CustName, us, pas)
-        tme = datetime.now()
-        BillNos = f'{tme.strftime("%y""%m""%d")}{CustID}-{D}'
-        a[3] = BillNos
-        if float(Bdic.get()) > 100:
-            messagebox.showerror("Negetive Ruprees", "Please Enter discount (%) between 0 to 100")
-            Bdic.set('0.0')
-            return
-        else:
-            disc = float(Bdic.get())
-        BillAmt = Btot.get()
-        for i in range(0, a[0] - 1):
-            lst1[i].insert(0, BillNos)
-            stk = lst2[i] - lst1[i][2]
-            tup = (lst1[i][1], stk)
-            Update_other(1, tup, us, pas)
-
-        BillNet = float(Bnet.get())
-        BillDate = f'{tme.strftime("%Y")}-{tme.strftime("%m")}-{tme.strftime("%d")} {tme.strftime("%H:%M:%S")}'
-        Type = rad.get()
-        Balance=""
-        if Type == 'Cash':
-            Balance = BillNet - BillNet
-        elif Type == 'Credit':
-            if Bpay.get() == "":
-                BillPay = 0.0
-            else:
-                BillPay = float(Bpay.get())
-            Balance = BillNet - BillPay
-
-        tup5 = (CustID, CustName, 1, Balance, BillNet)
-        Create(5, tup5, us, pas)
-
-        tup = (BillNos, CustID, Type, BillDate, a[0] - 1, BillAmt, disc, BillNet, Balance)
-        Create(3, tup, us, pas)
-        for tup1 in lst1:
-            Create(4, tup1, us, pas)
-
-        PDF(BillNos)
-
-        QA = messagebox.askquestion("Print Pdf", f"Bill has been genrated.\nDo you want to print bill?")
-        if QA == 'yes':
-            filename = str(f'Bills\\Invoice {a[3]}.pdf')
-            printf(filename)
-        Clear()
-
-    def callback1(event):
-        # print(ePName['state'])
-        if ePName['state'] == 'disabled':
-            Check()
-            return
-        ePName.focus()
-
-    def callback2(event):
-        eBdisc.focus()
-
-    def callback3(event):
-        ePqty.focus()
-
-    def callback4(event):
-        ePName.focus()
-        Add()
-
-    def callback5(event):
-        eBdis.focus()
-
-    def callback6(event):
-        Modify()
-
-    def callback7(event):
-        Check()
-
-    scroll = Scrollbar(down)
-    scroll.pack(side=RIGHT, fill=Y)
-    tv = ttk.Treeview(down, columns=('col0', 'col1', 'col2', 'col3', 'col4', 'col5', 'col6'), show='headings',
-                      height=10, yscrollcommand=scroll.set, style="mystyle.Treeview")
-    tv.pack()
-    scroll.config(command=tv.yview)
-
-    tv.heading('col0', text='Sr No.')
-    tv.heading('col1', text='Product Name')
-    tv.heading('col2', text='Qty')
-    tv.heading('col3', text='Rate')
-    tv.heading('col4', text='Price')
-    tv.heading('col5', text='GST')
-    tv.heading('col6', text='Unit')
-
-    tv.column('col0', anchor=CENTER, width=50)
-    tv.column('col1', anchor=CENTER, width=150)
-    tv.column('col2', anchor=CENTER, width=55)
-    tv.column('col3', anchor=CENTER, width=100)
-    tv.column('col4', anchor=CENTER, width=100)
-    tv.column('col5', anchor=CENTER, width=60)
-    tv.column('col6', anchor=CENTER, width=60)
-
-    label = Label(up, font=text_format)  # For Clock
-    label.grid(row=0, column=2, sticky=W, columnspan=2)
-    clock()
-
-    lBtot = Label(up, text="Before Discount:", font=text_format)
-    lBtot.grid(row=4, column=2, sticky=W)
-
-    eBtot = Label(up, text=f"₹{Btot.get()}", font=text_format)
-    eBtot.grid(row=4, column=2, sticky=E, padx=10, pady=5, columnspan=2)
-
-    lBnet = Label(up, text="After Discount:", font=text_format)
-    lBnet.grid(row=4, column=0, sticky=W)
-
-    eBnet = Label(up, text=f"₹{Bnet.get()}", font=text_format)
-    eBnet.grid(row=4, column=1, sticky=W, padx=10, pady=5)
-
-    lCName = Label(up, text="Customer Name:", font=text_format)
-    lCName.grid(row=0, column=0, sticky=W)
-
-    eCName = Entry(up, textvariable=CName, width=18, font=text_format)
-    eCName.grid(row=0, column=1, sticky=W, padx=10, pady=5)
-    eCName.bind('<Return>', callback1)
-    eCName.focus()
-
-    lPName = Label(up, text="Product Name:", font=text_format)
-    lPName.grid(row=3, column=0, sticky=W)
-
-    ePName = ttk.Combobox(up, values=data)
-    ePName.current(0)
-    ePName.configure(width=18, font=text_format)
-    ePName.grid(row=3, column=1)
-    ePName.bind('<KeyRelease>', ProdN)
-    ePName.bind('<Return>', callback3)
-    ePName.bind('<Shift_L>', callback2)
-    ePName.bind('<Shift_R>', callback2)
-
-    lPqty = Label(up, text="Product Qty.:", font=text_format)
-    lPqty.grid(row=3, column=2, sticky=W)
-
-    ePqty = Entry(up, textvariable=PQty, width=7, font=text_format)
-    ePqty.grid(row=3, column=3, sticky=W, padx=10, pady=5)
-    ePqty.bind('<Return>', callback4)
-    ePqty.bind('<Shift_L>', callback2)
-    ePqty.bind('<Shift_R>', callback2)
-
-    lType = Label(up, text="Payment Type:", font=text_format)
-    lType.grid(row=1, column=0, sticky=W)
-
-    eType1 = Radiobutton(up, text="Cash", variable=rad, value="Cash", font=text_format, command=Credit)
-    eType1.grid(row=1, column=1, sticky=W, pady=5)
-
-    eType2 = Radiobutton(up, text="Credit", variable=rad, value="Credit", font=text_format, command=Credit)
-    eType2.grid(row=1, column=1, sticky=E, padx=10)
-
-    lBdis = Label(up, text="Bill Discount(%):", font=text_format)
-    lBdis.grid(row=2, column=0, sticky=W)
-
-    eBdis = Entry(up, textvariable=Bdic, width=7, font=text_format)
-    eBdis.grid(row=2, column=1, sticky=W, padx=10, pady=5)
-    eBdis.bind('<KeyRelease>', discount1)
-    eBdis.bind('<Return>', callback2)
-
-    lBdisc = Label(up, text="Bill Discount(₹):", font=text_format)
-    lBdisc.grid(row=2, column=2, sticky=W)
-
-    eBdisc = Entry(up, textvariable=Bdisc, width=7, font=text_format)
-    eBdisc.grid(row=2, column=3, sticky=W, padx=10, pady=5)
-    eBdisc.bind('<KeyRelease>', discount)
-    eBdisc.bind('<Return>', callback1)
-    eBdisc.bind('<Shift_L>', callback5)
-    eBdisc.bind('<Shift_R>', callback5)
-
-    lPay = Label(up, text="Pay in Advance:", font=text_format)
-    lPay.grid(row=1, column=2, sticky=W)
-
-    ePay = Entry(up, textvariable=Bpay, width=7, font=text_format)
-    ePay.grid(row=1, column=3, sticky=W, padx=10, pady=5)
-    ePay.config(state="disabled")
-    ePay.bind('<Return>', callback7)
-
-    button0 = Button(side, text="Add Product", **button_format, width=12, command=Add)
-    button0.grid(row=0, column=0, sticky=W, pady=10, padx=10)
-
-    button1 = Button(side, text="Edit Product", **button_format, width=12, command=Modify)
-    button1.grid(row=1, column=0, sticky=W, pady=10, padx=10)
-
-    button2 = Button(side, text="Delete Product", **button_format, width=12, command=Remve)
-    button2.grid(row=2, column=0, sticky=W, pady=10, padx=10)
-
-    button3 = Button(side, text="Generate Bill", **button_format, width=12, command=Check)
-    button3.grid(row=3, column=0, sticky=W, pady=10, padx=10)
-
-    button3 = Button(side, text="Clear Screen", **button_format, width=12, command=Clear)
-    button3.grid(row=4, column=0, sticky=W, pady=10, padx=10)
-
-    button5 = Button(side, text="Main Menu", **button_format, width=12, command=Close)
-    button5.grid(row=5, column=0, sticky=E, pady=10, padx=10)
-
-
-""" Add Function """
-def Main_Add(): # Select what to Add
-    option = {1: Suppliers_Add, 2: Products_Add, 3: Main}
-    
-    right.grid(row=0,column=0,padx=350,pady=80)
-    right2 = Frame(right, bd=2, relief=SOLID, padx=50, pady=50)
-    right2.pack()
-    l0 = Label(right2, text="New", font=("arial-bold", 25))
-    l0.grid(row=0, column=0, padx=10, pady=10)
-
-    def Comon(v):
-        right2.destroy()
-        dictt = option.get(v)
-        dictt()
-
-
-    b1 = Button(right2, text="Supplier", width=12, **button_format, command=lambda *args: Comon(1))
-    b1.grid(row=1, column=0, padx=10, pady=10)
-    b2 = Button(right2, text="Product", width=12, **button_format, command=lambda *args: Comon(2))
-    b2.grid(row=2, column=0, padx=10, pady=10)
-    b4 = Button(right2, text="Home", width=12, **button_format, command=lambda *args: Comon(3))
-    b4.grid(row=4, column=0, padx=10, pady=10)
-    l3 = Label(right2, text=" ", font=text_format)
-    l3.grid(row=3, column=0, padx=10, pady=11)
-
-def Suppliers_Add(): # Add supplier
-    right.grid(row=0,column=0,padx=220,pady=55)
+def Suppdetail():
+    right.place(x=220, y=55)
     SuppID = supp_gen(us, pas)
     right1 = Frame(right, bd=2, relief=SOLID, padx=50, pady=50)
     right1.pack()
@@ -643,27 +119,31 @@ def Suppliers_Add(): # Add supplier
     def Close():
         right1.destroy()
         Main()
+        right.place(x=5000, y=80)
 
     def Back():
         right1.destroy()
         Main_Add()
+        right.place(x=5000, y=80)
 
     def Save(tup):
         Create(1, tup, us, pas)
-        supplst.append(f"{tup[0]} - {tup[1]}")
-        right1.destroy()
-        Suppliers_Add()
+        supplst.append("{0} - {1}".format(tup[0], tup[1]))
+        supplier.append((tup[0], tup[1]))
+        Close()
 
     def Show(tup0):
         SuppName, SuppAdd, SuppPhone, SuppEmail = tup0
         SuppName = SuppName.title()
         SuppAdd = SuppAdd.title()
         Name.set(SuppName)
-        Adr.set(SuppAdd)
+        Add.set(SuppAdd)
         eName.config(state='disabled')
         eAdd.config(state='disabled')
         ePhone.config(state='disabled')
         eEmail.config(state='disabled')
+        button1.destroy()
+        button2.destroy()
         tup = (SuppID, SuppName, SuppAdd, SuppPhone, SuppEmail)
 
         def OK():
@@ -675,12 +155,17 @@ def Suppliers_Add(): # Add supplier
         right1.focus_set()
         right1.bind('<Return>', callback)
 
-        button1.configure(text="All Ok! Lets save it", command=OK, width=15)
+        button0 = Button(right1, text="All Ok! Lets save it", bg="brown", fg="white",
+                         font=('arial', 14), command=OK)
+        button0.grid(row=5, column=0, columnspan=2, pady=10)
+        button = Button(right1, text="Cancel", bg="brown", fg="white",
+                        font=('arial', 14), command=Close)
+        button.grid(row=5, column=1, pady=10, sticky=E)
 
     def Check():
         phone, email = Phone.get(), Email.get()
-        adr = eAdd.get(1.0, END).strip()
-        Adr.set(adr)
+        aad = eAdd.get(1.0, END).strip()
+        Add.set(aad)
         a = 0
         if email == '':
             pass
@@ -695,84 +180,245 @@ def Suppliers_Add(): # Add supplier
         if a == 1:
             messagebox.showerror("Wrong Format", "Wrong Format\nCheck Again")
         elif a == 0:
-            Show(tuple([Name.get(), Adr.get(), Phone.get(), Email.get()]))
+            Show(tuple([Name.get(), Add.get(), Phone.get(), Email.get()]))
 
     ID = StringVar()
     Name = StringVar()
-    Adr = StringVar()
+    Add = StringVar()
     Phone = StringVar()
     Email = StringVar()
 
     ID.set(SuppID)
 
-    lID = Label(right1, text="Supplier ID", font=text_format)
+    lID = Label(right1, text="Supplier ID", font=("arial", 14))
     lID.grid(row=0, column=0, sticky=W)
-    eID = Entry(right1, textvariable=ID, state='disabled', font=text_format)
+
+    eID = Entry(right1, textvar=ID, state='disabled', font=("arial", 14))
     eID.grid(row=0, column=1, sticky=W, padx=10, pady=10)
 
-    lName = Label(right1, text="Supplier Name", font=text_format)
+    lName = Label(right1, text="Supplier Name", font=("arial", 14))
     lName.grid(row=1, column=0, sticky=W)
-    eName = Entry(right1, textvariable=Name, font=text_format)
+
+    eName = Entry(right1, textvar=Name, font=("arial", 14))
     eName.grid(row=1, column=1, sticky=W, padx=10, pady=10)
     eName.focus()
 
-    lAdd = Label(right1, text="Supplier Address", font=text_format)
+    lAdd = Label(right1, text="Supplier Address", font=("arial", 14))
     lAdd.grid(row=2, column=0, sticky=W)
-    eAdd = Text(right1, width=20, height=3, font=text_format)
+
+    eAdd = Text(right1, width=20, height=3, font=("arial", 14))
     eAdd.grid(row=2, column=1, sticky=W, padx=10, pady=10)
 
-    lPhone = Label(right1, text="Supplier Phone No.", font=text_format)
+    lPhone = Label(right1, text="Supplier Phone No.", font=("arial", 14))
     lPhone.grid(row=3, column=0, sticky=W)
-    ePhone = Entry(right1, textvariable=Phone, font=text_format)
+
+    ePhone = Entry(right1, textvar=Phone, font=("arial", 14))
     ePhone.grid(row=3, column=1, sticky=W, padx=10, pady=10)
 
-    lEmail = Label(right1, text="Supplier Email", font=text_format)
+    lEmail = Label(right1, text="Supplier Email", font=("arial", 14))
     lEmail.grid(row=4, column=0, sticky=W)
-    eEmail = Entry(right1, textvariable=Email, font=text_format)
+
+    eEmail = Entry(right1, textvar=Email, font=("arial", 14))
     eEmail.grid(row=4, column=1, sticky=W, padx=10, pady=10)
 
-    def callback0(event):
+    def callback(event):
         eAdd.focus()
-    eName.bind('<Return>', callback0)
 
-    def callback1(event):
+    eName.bind('<Return>', callback)
+
+    def callback(event):
         ePhone.focus()
-    eAdd.bind('<Return>', callback1)
 
-    def callback2(event):
+    eAdd.bind('<Return>', callback)
+
+    def callback(event):
         eEmail.focus()
-    ePhone.bind('<Return>', callback2)
 
-    def callback3(event):
+    ePhone.bind('<Return>', callback)
+
+    def callback(event):
         Check()
-    eEmail.bind('<Return>', callback3)
 
-    button1 = Button(right1, text="Check", width=7, **button_format, command=Check)
+    eEmail.bind('<Return>', callback)
+
+    button1 = Button(right1, text="Check", width=7, bg="brown", fg="white",
+                     font=('arial', 14), command=Check)
     button1.grid(row=5, column=0, pady=10, columnspan=2, padx=10)
-    button3 = Button(right1, text="Back", width=5, **button_format, command=Back)
+    button3 = Button(right1, text="Back", width=5, bg="brown", fg="white",
+                     font=('arial', 14), command=Back)
     button3.grid(row=5, column=0, pady=10, padx=10, sticky=W)
-    button2 = Button(right1, text="Home", width=5, **button_format, command=Close)
+    button2 = Button(right1, text="Exit", width=5, bg="brown", fg="white",
+                     font=('arial', 14), command=Close)
     button2.grid(row=5, column=1, pady=10, padx=10, sticky=E)
 
-def Products_Add(): # Add product
-    right.grid(row=0,column=0,padx=220,pady=25)
-    right1 = Frame(right, bd=2, relief=SOLID, padx=50, pady=20)
-    right1.pack()
 
-    global prodlst, prodname
+def Suppdetail_Edit(SuppID):
+    right.place(x=220, y=55)
+    right1 = Frame(right, bd=2, relief=SOLID, padx=50, pady=50)
+    right1.pack()
 
     def Close():
         right1.destroy()
         Main()
+        right.place(x=5000, y=80)
+
+    def Back():
+        right1.destroy()
+        Main_Mod()
+        right.place(x=5000, y=80)
+
+    def Save(tup):
+        Update_All(1, tup, us, pas)
+        Close()
+
+    def Show(tup0):
+        SuppName, SuppAdd, SuppPhone, SuppEmail = tup0
+        SuppName = SuppName.title()
+        SuppAdd = SuppAdd.title()
+        Name.set(SuppName)
+        Add.set(SuppAdd)
+        eName.config(state='disabled')
+        eAdd.config(state='disabled')
+        ePhone.config(state='disabled')
+        eEmail.config(state='disabled')
+        button1.destroy()
+        button2.destroy()
+        tup = (SuppID, SuppName, SuppAdd, SuppPhone, SuppEmail)
+
+        def OK():
+            Save(tup)
+
+        def callback(event):
+            OK()
+
+        right1.focus_set()
+        right1.bind('<Return>', callback)
+
+        button0 = Button(right1, text="All Ok! Lets save it", bg="brown", fg="white",
+                         font=('arial', 14), command=OK)
+        button0.grid(row=5, column=0, columnspan=2, pady=10)
+        button = Button(right1, text="Cancel", bg="brown", fg="white",
+                        font=('arial', 14), command=Close)
+        button.grid(row=5, column=1, pady=10, sticky=E)
+
+    def Check():
+        phone, email = Phone.get(), Email.get()
+        a = 0
+        aad = eAdd.get(1.0, END).strip()
+        Add.set(aad)
+        if email == '':
+            pass
+        elif '@' not in email or '.' not in email:
+            Email.set("")
+            eEmail.focus()
+            a = 1
+        if not phone.isdigit():
+            Phone.set("")
+            ePhone.focus()
+            a = 1
+        if a == 1:
+            messagebox.showerror("Wrong Format", "Wrong Format\nCheck Again")
+        elif a == 0:
+            Show(tuple([Name.get(), Add.get(), Phone.get(), Email.get()]))
+
+    ID = StringVar()
+    Name = StringVar()
+    Add = StringVar()
+    Phone = StringVar()
+    Email = StringVar()
+
+    demodb = mysql.connect(host="localhost", user=us, passwd=pas, database="projectold")
+    cursor = demodb.cursor()
+    cursor.execute(f"SELECT * FROM supplier WHERE SuppID='{SuppID}';")
+    i = cursor.fetchone()
+    ID.set(i[0])
+    Name.set(i[1])
+    Add.set(i[2])
+    Phone.set(i[3])
+    Email.set(i[4])
+    demodb.close()
+
+    lID = Label(right1, text="Supplier ID", font=("arial", 14))
+    lID.grid(row=0, column=0, sticky=W)
+
+    eID = Entry(right1, textvar=ID, state='disabled', font=("arial", 14))
+    eID.grid(row=0, column=1, sticky=W, padx=10, pady=10)
+
+    lName = Label(right1, text="Supplier Name", font=("arial", 14))
+    lName.grid(row=1, column=0, sticky=W)
+
+    eName = Entry(right1, textvar=Name, font=("arial", 14))
+    eName.grid(row=1, column=1, sticky=W, padx=10, pady=10)
+    eName.focus()
+
+    lAdd = Label(right1, text="Supplier Address", font=("arial", 14))
+    lAdd.grid(row=2, column=0, sticky=W)
+
+    eAdd = Text(right1, width=20, height=3, font=("arial", 14))
+    eAdd.grid(row=2, column=1, sticky=W, padx=10, pady=10)
+    eAdd.insert(1.0, Add.get())
+
+    lPhone = Label(right1, text="Supplier Phone No.", font=("arial", 14))
+    lPhone.grid(row=3, column=0, sticky=W)
+
+    ePhone = Entry(right1, textvar=Phone, font=("arial", 14))
+    ePhone.grid(row=3, column=1, sticky=W, padx=10, pady=10)
+
+    lEmail = Label(right1, text="Supplier Email", font=("arial", 14))
+    lEmail.grid(row=4, column=0, sticky=W)
+
+    eEmail = Entry(right1, textvar=Email, font=("arial", 14))
+    eEmail.grid(row=4, column=1, sticky=W, padx=10, pady=10)
+
+    def callback(event):
+        eAdd.focus()
+
+    eName.bind('<Return>', callback)
+
+    def callback(event):
+        ePhone.focus()
+
+    eAdd.bind('<Return>', callback)
+
+    def callback(event):
+        eEmail.focus()
+
+    ePhone.bind('<Return>', callback)
+
+    def callback(event):
+        Check()
+
+    eEmail.bind('<Return>', callback)
+
+    button1 = Button(right1, text="Check", width=7, bg="brown", fg="white",
+                     font=('arial', 14), command=Check)
+    button1.grid(row=5, column=0, pady=10, columnspan=2, padx=10)
+    button3 = Button(right1, text="Back", width=5, bg="brown", fg="white",
+                     font=('arial', 14), command=Back)
+    button3.grid(row=5, column=0, pady=10, padx=10, sticky=W)
+    button2 = Button(right1, text="Exit", width=5, bg="brown", fg="white",
+                     font=('arial', 14), command=Close)
+    button2.grid(row=5, column=1, pady=10, padx=10, sticky=E)
+
+
+def Products():
+    right.place(x=220, y=35)
+    right1 = Frame(right, bd=2, relief=SOLID, padx=50, pady=20)
+    right1.pack()
+
+    def Close():
+        right1.destroy()
+        Main()
+        right.place(x=5000, y=80)
 
     def Back():
         right1.destroy()
         Main_Add()
+        right.place(x=5000, y=80)
 
     def Save(tup1):
         Create(2, tup1, us, pas)
-        prodname.update({tup1[1]:tup1[2]})
-        prodlst.append(tup1[2])
+        alist()
         Close()
 
     def Show(tup0):
@@ -795,6 +441,8 @@ def Products_Add(): # Add product
         eStock.config(state='disabled')
         eSID.config(state='disabled')
 
+        button2.destroy()
+        button1.destroy()
         tup1 = (SuppID, ProdID, ProdName, ProdCost, ProdRate, ProdGST, ProdUnit, ProdStock)
 
         def OK():
@@ -806,9 +454,12 @@ def Products_Add(): # Add product
         right1.focus_set()
         right1.bind('<Return>', callback)
 
-        button1.configure(text="All Ok! Lets save it", command=OK)
-        button2.configure(text="Cancel", command=Back)
-
+        button0 = Button(right1, text="All Ok! Lets save it", bg="brown", fg="white",
+                         font=('arial', 14), command=OK)
+        button0.grid(row=8, column=0, columnspan=2, pady=10)
+        button = Button(right1, text="Cancel", bg="brown", fg="white",
+                        font=('arial', 14), command=Close)
+        button.grid(row=8, column=1, pady=10, sticky=E)
     def Check():
         stock, rate, cost = Stock.get(), Rate.get(), Cost.get()
         a = 0
@@ -826,7 +477,7 @@ def Products_Add(): # Add product
         if Unit.get() == 'Select Unit':
             a = 1
             eUnit.focus()
-        ProdID:str = prod_gen(SuppID, us, pas)
+        ProdID = prod_gen(SuppID, us, pas)
         ID.set(ProdID)
         if not stock.isdigit():
             Stock.set("")
@@ -861,545 +512,127 @@ def Products_Add(): # Add product
     Stock = StringVar()
     SID = StringVar()
 
-    lSID = Label(right1, text="Supplier", font=text_format)
+    lSID = Label(right1, text="Supplier", font=("arial", 14))
     lSID.grid(row=0, column=0, sticky=W)
-    eSID = ttk.Combobox(right1, values=supplst)
+
+    eSID = ttk.Combobox(right1, value=supplst)
     eSID.config(width=18)
-    eSID.config(font=text_format)
+    eSID.config(font=("arial", 14))
     eSID.current(0)
     eSID.grid(row=0, column=1, padx=10, pady=10)
     eSID.config(state='readonly')
     eSID.focus()
 
-    lID = Label(right1, text="Product ID", font=text_format)
+    lID = Label(right1, text="Product ID", font=("arial", 14))
     lID.grid(row=1, column=0, sticky=W)
-    eID = Entry(right1, textvariable=ID, state='disabled', font=text_format)
+
+    eID = Entry(right1, textvar=ID, state='disabled', font=("arial", 14))
     eID.grid(row=1, column=1, sticky=W, padx=10, pady=10)
 
-    lName = Label(right1, text="Product Name", font=text_format)
+    lName = Label(right1, text="Product Name", font=("arial", 14))
     lName.grid(row=2, column=0, sticky=W)
-    eName = Entry(right1, textvariable=Name, font=text_format)
+
+    eName = Entry(right1, textvar=Name, font=("arial", 14))
     eName.grid(row=2, column=1, sticky=W, padx=10, pady=10)
 
-    lCost = Label(right1, text="Product Cost (CP)", font=text_format)
+    lCost = Label(right1, text="Product Cost (CP)", font=("arial", 14))
     lCost.grid(row=3, column=0, sticky=W)
-    eCost = Entry(right1, textvariable=Cost, font=text_format)
+
+    eCost = Entry(right1, textvar=Cost, font=("arial", 14))
     eCost.grid(row=3, column=1, sticky=W, padx=10, pady=10)
 
-    lRate = Label(right1, text="Product Rate (SP)", font=text_format)
+    lRate = Label(right1, text="Product Rate (SP)", font=("arial", 14))
     lRate.grid(row=4, column=0, sticky=W)
-    eRate = Entry(right1, textvariable=Rate, font=text_format)
+
+    eRate = Entry(right1, textvar=Rate, font=("arial", 14))
     eRate.grid(row=4, column=1, sticky=W, padx=10, pady=10)
 
-    lStock = Label(right1, text="Product Stock", font=text_format)
+    lStock = Label(right1, text="Product Stock", font=("arial", 14))
     lStock.grid(row=5, column=0, sticky=W)
-    eStock = Entry(right1, textvariable=Stock, font=text_format)
+
+    eStock = Entry(right1, textvar=Stock, font=("arial", 14))
     eStock.grid(row=5, column=1, sticky=W, padx=10, pady=10)
 
-    lGST = Label(right1, text="Product GST(%)", font=text_format)
+    lGST = Label(right1, text="Product GST(%)", font=("arial", 14))
     lGST.grid(row=6, column=0, sticky=W)
-    eGST = ttk.Combobox(right1, values=gstlst)
+
+    eGST = ttk.Combobox(right1, value=gstlst)
     eGST.current(0)
     eGST.config(width=18)
-    eGST.config(font=text_format)
+    eGST.config(font=("arial", 14))
     eGST.grid(row=6, column=1, padx=10, pady=10)
     eGST.config(state='readonly')
 
-    lUnit = Label(right1, text="Product Unit", font=text_format)
+    lUnit = Label(right1, text="Product Unit", font=("arial", 14))
     lUnit.grid(row=7, column=0, sticky=W)
-    eUnit = ttk.Combobox(right1, values=unitlst)
+
+    eUnit = ttk.Combobox(right1, value=unitlst)
     eUnit.config(width=18)
     eUnit.current(0)
-    eUnit.config(font=text_format)
+    eUnit.config(font=("arial", 14))
     eUnit.grid(row=7, column=1, padx=10, pady=10)
     eUnit.config(state='readonly')
 
-    def callback0(event):
+    def callback(event):
         eName.focus()
-    eSID.bind('<Return>', callback0)
 
-    def callback1(event):
+    eSID.bind('<Return>', callback)
+
+    def callback(event):
         eCost.focus()
-    eName.bind('<Return>', callback1)
 
-    def callback2(event):
+    eName.bind('<Return>', callback)
+
+    def callback(event):
         eRate.focus()
-    eCost.bind('<Return>', callback2)
 
-    def callback3(event):
+    eCost.bind('<Return>', callback)
+
+    def callback(event):
         eStock.focus()
-    eRate.bind('<Return>', callback3)
 
-    def callback4(event):
+    eRate.bind('<Return>', callback)
+
+    def callback(event):
         eGST.focus()
-    eStock.bind('<Return>', callback4)
 
-    def callback5(event):
+    eStock.bind('<Return>', callback)
+
+    def callback(event):
         eUnit.focus()
-    eGST.bind('<Return>', callback5)
 
-    def callback6(event):
+    eGST.bind('<Return>', callback)
+
+    def callback(event):
         Check()
-    eUnit.bind('<Return>', callback6)
 
-    button1 = Button(right1, text="Check", width=7, **button_format, command=Check)
+    eUnit.bind('<Return>', callback)
+
+    button1 = Button(right1, text="Check", width=7, bg="brown", fg="white",
+                     font=('arial', 14), command=Check)
     button1.grid(row=8, column=0, pady=10, columnspan=2, padx=10)
-    button3 = Button(right1, text="Back", width=5, **button_format, command=Back)
+    button3 = Button(right1, text="Back", width=5, bg="brown", fg="white",
+                     font=('arial', 14), command=Back)
     button3.grid(row=8, column=0, pady=10, padx=10, sticky=W)
-    button2 = Button(right1, text="Home", width=5, **button_format, command=Close)
+    button2 = Button(right1, text="Exit", width=5, bg="brown", fg="white",
+                     font=('arial', 14), command=Close)
     button2.grid(row=8, column=1, pady=10, padx=10, sticky=E)
 
 
-""" Modify Functions """
-def Main_Mod(): # Select what to modify 
-    option = {1: SuppSelct, 2: ProdSelect, 3: Delsupp, 4: Delprod, 5: Main}
-    
-    right.grid(column=0,row=0,padx=350,pady=55)
-    right2 = Frame(right, bd=2, relief=SOLID, padx=50, pady=50)
-    right2.pack()
-
-
-    def Comon(v):
-        right2.destroy()
-        dictt = option.get(v)
-        dictt()
-
-    l0 = Label(right2, text="Modify", font=("arial-bold", 25))
-    l0.grid(row=0, column=0)
-
-    b1 = Button(right2, text="Supplier", width=12, **button_format, command=lambda *args: Comon(1))
-    b1.grid(row=1, column=0, padx=10, pady=10)
-
-    b2 = Button(right2, text="Product", width=12, **button_format, command=lambda *args: Comon(2))
-    b2.grid(row=2, column=0, padx=10, pady=10)
-
-    b3 = Button(right2, text="Supplier Status", width=12, **button_format, command=lambda *args: Comon(3))
-    b3.grid(row=3, column=0, padx=10, pady=10)
-
-    b4 = Button(right2, text="Product Status", width=12, **button_format, command=lambda *args: Comon(4))
-    b4.grid(row=4, column=0, padx=10, pady=10)
-
-    b5 = Button(right2, text="Home", width=12, **button_format, command=lambda *args: Comon(5))
-    b5.grid(row=5, column=0, padx=10, pady=10)
-
-def SuppSelct(): # Select for modify Supplier
-    right.grid(row=0,column=0,padx=275,pady=80)
-    right3 = Frame(right, bd=2, relief=SOLID, padx=50, pady=50)
-    right3.pack()
-    l0 = Label(right3, text="Supplier", font=("arial bold", 20))
-    l0.grid(row=0, column=0, columnspan=2)
-
-    def back(v):
-        right3.destroy()
-        if v == 1:
-            Main_Mod()
-        elif v == 2:
-            Main()
-
-    def Check(event):
-        item = tv.item(tv.focus())['values']
-        try:
-            item[0]
-        except:
-            messagebox.showerror("Wrong Format", "Select Supplier")
-            return
-
-        right3.destroy()
-        Suppliers_Edit(item[0])
-
-    right4 = Frame(right3, bd=1, relief=SOLID)
-    right4.grid(row=2, column=0, pady=20, columnspan=2)
-    scroll = Scrollbar(right4)
-    scroll.pack(side=RIGHT, fill=Y)
-    tv = ttk.Treeview(right4, columns=('col0', 'col1'),
-                      show='headings', height=4, yscrollcommand=scroll.set, style="mystyle.Treeview")
-    tv.pack()
-    scroll.config(command=tv.yview)
-
-    tv.heading('col0', text='Id')
-    tv.heading('col1', text='Name')
-
-    tv.column('col0', anchor=CENTER, width=100)
-    tv.column('col1', anchor=CENTER, width=200)
-
-    for ID, Name in suppname.items():
-        i = [ID, Name]
-        tv.insert('', 'end', values=i)
-
-    tv.bind('<Double 1>', Check)
-
-    b4 = Button(right3, text="Back", width=12, **button_format, command=lambda *args: back(1))
-    b4.grid(row=3, column=0, pady=10)
-
-    b5 = Button(right3, text="Home", width=12, **button_format, command=lambda *args: back(2))
-    b5.grid(row=3, column=1, pady=10)
-
-def ProdSelect(): # Select for modify Product
-    right.grid(row=0,column=0,padx=275,pady=80)
-    right3 = Frame(right, bd=2, relief=SOLID, padx=50, pady=50)
-    right3.pack()
-    l0 = Label(right3, text="Product", font=("arial bold", 20))
-    l0.grid(row=0, column=0, columnspan=2)
-
-    def back(v):
-        right3.destroy()
-        if v == 1:
-            Main_Mod()
-        elif v == 2:
-            Main()
-
-    def Check(event):
-        item = tv.item(tv.focus())['values']
-        try:
-            item[0]
-        except:
-            messagebox.showerror("Wrong Format", "Select Product")
-            return
-
-        right3.destroy()
-        Products_Edit(item[0])
-
-    right4 = Frame(right3, bd=1, relief=SOLID)
-    right4.grid(row=2, column=0, pady=20, columnspan=2)
-    scroll = Scrollbar(right4)
-    scroll.pack(side=RIGHT, fill=Y)
-    tv = ttk.Treeview(right4, columns=('col0', 'col1'),
-                      show='headings', height=4, yscrollcommand=scroll.set, style="mystyle.Treeview")
-    tv.pack()
-    scroll.config(command=tv.yview)
-
-    tv.heading('col0', text='Id')
-    tv.heading('col1', text='Name')
-
-    tv.column('col0', anchor=CENTER, width=100)
-    tv.column('col1', anchor=CENTER, width=200)
-
-    for ID, Name in prodname.items():
-        i = [ID, Name]
-        tv.insert('', 'end', values=i)
-
-    tv.bind('<Double 1>', Check)
-
-    b4 = Button(right3, text="Back", width=12, **button_format, command=lambda *args: back(1))
-    b4.grid(row=3, column=0, pady=10)
-
-    b5 = Button(right3, text="Home", width=12, **button_format, command=lambda *args: back(2))
-    b5.grid(row=3, column=1, pady=10)
-
-def Delsupp(): # Delete Supplier
-    right.grid(row=0,column=0,padx=145,pady=80)
-    right3 = Frame(right, bd=2, relief=SOLID, padx=50, pady=50)
-    right3.pack()
-    demodb = mysql.connect(**DB)
-    cursor = demodb.cursor()
-    cursor.execute(f"SELECT * FROM supplier")
-    lst2 = list(cursor.fetchall())
-    demodb.close()
-    right2 = Frame(right3, bd=1, relief=SOLID)
-    right2.grid(row=1, column=0, pady=20)
-    scroll = Scrollbar(right2)
-    scroll.pack(side=RIGHT, fill=Y)
-    tv = ttk.Treeview(right2, columns=('col0', 'col1', 'col2', 'col3', 'col4', 'col5'),
-                      show='headings', height=8, yscrollcommand=scroll.set, style="mystyle.Treeview")
-    tv.pack()
-    scroll.config(command=tv.yview)
-
-    tv.heading('col0', text='Id')
-    tv.heading('col1', text='Name')
-    tv.heading('col2', text='Address')
-    tv.heading('col3', text='Phone No.')
-    tv.heading('col4', text='Email')
-    tv.heading('col5', text='Status')
-
-    tv.column('col0', anchor=CENTER, width=50)
-    tv.column('col1', anchor=CENTER, width=100)
-    tv.column('col2', anchor=CENTER, width=100)
-    tv.column('col3', anchor=CENTER, width=100)
-    tv.column('col4', anchor=CENTER, width=100)
-    tv.column('col5', anchor=CENTER, width=100)
-
-    for i in lst2:
-        i = list(i)
-        if i[5] == 'Y':
-            i[5] = 'Discontinued'
-        elif i[5] == 'N':
-            i[5] = 'Active'
-        tv.insert('', 'end', values=i)
-
-    def ab():
-        item:list = tv.item(tv.focus())['values']
-        try:
-            item[0]
-        except:
-            messagebox.showerror("Wrong Format", "Select Supplier")
-            return 0
-        if item[5] == 'Discontinued':
-            item[5] = 0
-        elif item[5] == 'Active':
-            item[5] = 1
-        tup = (item[0], item[5])
-        Update_other(2, tup, us, pas)
-        Update_lst(1)
-        if item[5] == 1:
-            item[5] = 'Discontinued'
-        elif item[5] == 0:
-            item[5] = 'Active'
-        selected = tv.focus()
-        tv.item(selected, text="", values=item)
-
-    def click(event):
-        ab()
-    tv.bind('<Double 1>', click)
-
-    def close():
-        right3.destroy()
-        Main()
-
-    def back():
-        right2.destroy()
-        right3.destroy()
-        Main_Mod()
-
-    b1 = Button(right3, text='Back', width=12, **button_format, command=back)
-    b1.grid(row=3, column=0, sticky=W)
-    l1 = Label(right3, text="Change Supplier Status", font=("arial-bold", 25))
-    l1.grid(row=0, column=0)
-    b2 = Button(right3, text="Home", width=12, **button_format, command=close)
-    b2.grid(row=3, column=0, sticky=E)
-    b3 = Button(right3, text="Change Status", width=12, **button_format, command=ab)
-    b3.grid(row=3, column=0)
-
-def Delprod(): # Delete Product
-    right.grid(row=0,column=0,padx=200,pady=80)
-    right3 = Frame(right, bd=2, relief=SOLID, padx=50, pady=50)
-    right3.pack()
-    demodb = mysql.connect(**DB)
-    cursor = demodb.cursor()
-    cursor.execute(f"SELECT ProdID, Name, Stock, SP, Hide FROM product")
-    lst2 = list(cursor.fetchall())
-    demodb.close()
-    right2 = Frame(right3, bd=1, relief=SOLID)
-    right2.grid(row=1, pady=20, column=0)
-    scroll = Scrollbar(right2)
-    scroll.pack(side=RIGHT, fill=Y)
-    tv = ttk.Treeview(right2, columns=('col0', 'col1', 'col2', 'col3', 'col4'),
-                      show='headings', height=8, yscrollcommand=scroll.set, style="mystyle.Treeview")
-    tv.pack()
-    scroll.config(command=tv.yview)
-
-    tv.heading('col0', text='Id')
-    tv.heading('col1', text='Name')
-    tv.heading('col2', text='Stock')
-    tv.heading('col3', text='SP')
-    tv.heading('col4', text='Status')
-
-    tv.column('col0', anchor=CENTER, width=125)
-    tv.column('col1', anchor=CENTER, width=175)
-    tv.column('col2', anchor=CENTER, width=50)
-    tv.column('col3', anchor=CENTER, width=100)
-    tv.column('col4', anchor=CENTER, width=100)
-
-    for i in lst2:
-        i = list(i)
-        if i[4] == 'Y':
-            i[4] = 'Discontinued'
-        elif i[4] == 'N':
-            i[4] = 'Active'
-        tv.insert('', 'end', values=i)
-
-    def close():
-        right3.destroy()
-        Main()
-
-    def ab():
-        item = tv.item(tv.focus())['values']
-        try:
-            item[0]
-        except:
-            messagebox.showerror("Wrong Format", "Select Product")
-            return 0
-        if item[4] == 'Discontinued':
-            item[4] = 0
-        elif item[4] == 'Active':
-            item[4] = 1
-        tup = (item[0], item[4])
-        Update_other(3, tup, us, pas)
-        Update_lst(2)
-        if item[4] == 1:
-            item[4] = 'Discontinued'
-        elif item[4] == 0:
-            item[4] = 'Active'
-        selected = tv.focus()
-        tv.item(selected, text="", values=item)
-
-    def click(event):
-        ab()
-
-    tv.bind('<Double 1>', click)
-
-    def back():
-        right2.destroy()
-        right3.destroy()
-        Main_Mod()
-
-    b1 = Button(right3, text='Back', width=12, **button_format, command=back)
-    b1.grid(row=3, column=0, sticky=W)
-    l1 = Label(right3, text="Change Product Status", font=("arial-bold", 25))
-    l1.grid(row=0, column=0)
-    b2 = Button(right3, text="Home", width=12, **button_format, command=close)
-    b2.grid(row=3, column=0, sticky=E)
-    b3 = Button(right3, text="Change Status", width=12, **button_format, command=ab)
-    b3.grid(row=3, column=0)
-
-def Suppliers_Edit(SuppID): # Modify Supplier
-    right.grid(row=0,column=0,padx=220,pady=55)
-    right1 = Frame(right, bd=2, relief=SOLID, padx=50, pady=50)
-    right1.pack()
-
-    def Close():
-        right1.destroy()
-        Main()
-
-    def Back():
-        right1.destroy()
-        SuppSelct()
-
-    def Save(tup):
-        Update_All(1, tup, us, pas)
-        Close()
-
-    def Show(tup0):
-        SuppName, SuppAdd, SuppPhone, SuppEmail = tup0
-        SuppName = SuppName.title()
-        SuppAdd = SuppAdd.title()
-        Name.set(SuppName)
-        Add.set(SuppAdd)
-        eName.config(state='disabled')
-        eAdd.config(state='disabled')
-        ePhone.config(state='disabled')
-        eEmail.config(state='disabled')
-        button1.destroy()
-        button2.destroy()
-        tup = (SuppID, SuppName, SuppAdd, SuppPhone, SuppEmail)
-
-        def OK():
-            Save(tup)
-
-        def callback(event):
-            OK()
-
-        right1.focus_set()
-        right1.bind('<Return>', callback)
-
-        button0 = Button(right1, text="All Ok! Lets save it", **button_format, command=OK)
-        button0.grid(row=5, column=0, columnspan=2, pady=10)
-        button = Button(right1, text="Cancel", **button_format, command=Close)
-        button.grid(row=5, column=1, pady=10, sticky=E)
-
-    def Check():
-        phone, email = Phone.get(), Email.get()
-        a = 0
-        aad = eAdd.get(1.0, END).strip()
-        Add.set(aad)
-        if email == '':
-            pass
-        elif '@' not in email or '.' not in email:
-            Email.set("")
-            eEmail.focus()
-            a = 1
-        if not phone.isdigit():
-            Phone.set("")
-            ePhone.focus()
-            a = 1
-        if a == 1:
-            messagebox.showerror("Wrong Format", "Wrong Format\nCheck Again")
-        elif a == 0:
-            Show(tuple([Name.get(), Add.get(), Phone.get(), Email.get()]))
-
-    def callback1(event):
-        eAdd.focus()
-
-    def callback2(event):
-        ePhone.focus()
-
-    def callback3(event):
-        eEmail.focus()
-
-    def callback4(event):
-        Check()
-
-    ID = StringVar()
-    Name = StringVar()
-    Add = StringVar()
-    Phone = StringVar()
-    Email = StringVar()
-
-    demodb = mysql.connect(**DB)
-    cursor = demodb.cursor()
-    cursor.execute(f"SELECT * FROM supplier WHERE SuppID='{SuppID}';")
-    i:tuple = cursor.fetchone()
-    ID.set(i[0])
-    Name.set(i[1])
-    Add.set(i[2])
-    Phone.set(i[3])
-    Email.set(i[4])
-    demodb.close()
-
-    lID = Label(right1, text="Supplier ID", font=text_format)
-    lID.grid(row=0, column=0, sticky=W)
-
-    eID = Entry(right1, textvariable=ID, state='disabled', font=text_format)
-    eID.grid(row=0, column=1, sticky=W, padx=10, pady=10)
-
-    lName = Label(right1, text="Supplier Name", font=text_format)
-    lName.grid(row=1, column=0, sticky=W)
-
-    eName = Entry(right1, textvariable=Name, font=text_format)
-    eName.grid(row=1, column=1, sticky=W, padx=10, pady=10)
-    eName.focus()
-    eName.bind('<Return>', callback1)
-
-    lAdd = Label(right1, text="Supplier Address", font=text_format)
-    lAdd.grid(row=2, column=0, sticky=W)
-
-    eAdd = Text(right1, width=20, height=3, font=text_format)
-    eAdd.grid(row=2, column=1, sticky=W, padx=10, pady=10)
-    eAdd.insert(1.0, Add.get())
-    eAdd.bind('<Return>', callback2)
-
-    lPhone = Label(right1, text="Supplier Phone No.", font=text_format)
-    lPhone.grid(row=3, column=0, sticky=W)
-
-    ePhone = Entry(right1, textvariable=Phone, font=text_format)
-    ePhone.grid(row=3, column=1, sticky=W, padx=10, pady=10)
-    ePhone.bind('<Return>', callback3)
-
-    lEmail = Label(right1, text="Supplier Email", font=text_format)
-    lEmail.grid(row=4, column=0, sticky=W)
-
-    eEmail = Entry(right1, textvariable=Email, font=text_format)
-    eEmail.grid(row=4, column=1, sticky=W, padx=10, pady=10)
-    eEmail.bind('<Return>', callback4)
-
-    button1 = Button(right1, text="Check", width=7, **button_format, command=Check)
-    button1.grid(row=5, column=0, pady=10, columnspan=2, padx=10)
-    button3 = Button(right1, text="Back", width=5, **button_format, command=Back)
-    button3.grid(row=5, column=0, pady=10, padx=10, sticky=W)
-    button2 = Button(right1, text="Home", width=5, **button_format, command=Close)
-    button2.grid(row=5, column=1, pady=10, padx=10, sticky=E)
-
-def Products_Edit(ProdID): # Modify Product
-    right.grid(row=0,column=0,padx=220,pady=35)
+def Products_Edit(ProdID):
+    right.place(x=220, y=35)
     right1 = Frame(right, bd=2, relief=SOLID, padx=50, pady=20)
     right1.pack()
 
     def Close():
         right1.destroy()
         Main()
+        right.place(x=5000, y=80)
 
     def Back():
         right1.destroy()
-        ProdSelect()
+        Main_Mod()
+        right.place(x=5000, y=80)
 
     def Save(tup1):
         Update_All(2, tup1, us, pas)
@@ -1438,9 +671,11 @@ def Products_Edit(ProdID): # Modify Product
         right1.focus_set()
         right1.bind('<Return>', callback)
 
-        button0 = Button(right1, text="All Ok! Lets save it", **button_format, command=OK)
+        button0 = Button(right1, text="All Ok! Lets save it", bg="brown", fg="white",
+                         font=('arial', 14), command=OK)
         button0.grid(row=8, column=0, columnspan=2, pady=10)
-        button = Button(right1, text="Cancel", **button_format, command=Close)
+        button = Button(right1, text="Cancel", bg="brown", fg="white",
+                        font=('arial', 14), command=Close)
         button.grid(row=8, column=1, pady=10, sticky=E)
 
     def Check():
@@ -1483,24 +718,6 @@ def Products_Edit(ProdID): # Modify Product
         if a == 0:
             Show(tuple([SuppID, ProdID, Name.get(), Cost.get(), Rate.get(), gst, Stock.get(), Unit.get()]))
 
-    def callback1(event):
-        eCost.focus()
-
-    def callback2(event):
-        eRate.focus()
-
-    def callback3(event):
-        eStock.focus()
-
-    def callback4(event):
-        eGST.focus()
-
-    def callback5(event):
-        eUnit.focus()
-
-    def callback6(event):
-        Check()
-
     ID = StringVar()
     Name = StringVar()
     Cost = StringVar()
@@ -1510,11 +727,11 @@ def Products_Edit(ProdID): # Modify Product
     Stock = StringVar()
     SID = StringVar()
 
-    demodb = mysql.connect(**DB)
+    demodb = mysql.connect(host="localhost", user=us, passwd=pas, database="projectold")
     cursor = demodb.cursor()
     sql = f"SELECT * FROM product where product.ProdID='{ProdID}';"
     cursor.execute(sql)
-    i:tuple = cursor.fetchone()
+    i = cursor.fetchone()
     SID.set(i[0])
     ID.set(i[1])
     Name.set(i[2])
@@ -1525,131 +742,423 @@ def Products_Edit(ProdID): # Modify Product
     Stock.set(i[7])
     demodb.close()
 
-    lSID = Label(right1, text="Supplier", font=text_format)
+    lSID = Label(right1, text="Supplier", font=("arial", 14))
     lSID.grid(row=0, column=0, sticky=W)
 
-    eSID = Entry(right1, textvariable=SID, state='disabled', font=text_format)
+    eSID = Entry(right1, textvar=SID, state='disabled', font=("arial", 14))
     eSID.grid(row=0, column=1, sticky=W, padx=10, pady=10)
 
-    lID = Label(right1, text="Product ID", font=text_format)
+    lID = Label(right1, text="Product ID", font=("arial", 14))
     lID.grid(row=1, column=0, sticky=W)
 
-    eID = Entry(right1, textvariable=ID, state='disabled', font=text_format)
+    eID = Entry(right1, textvar=ID, state='disabled', font=("arial", 14))
     eID.grid(row=1, column=1, sticky=W, padx=10, pady=10)
 
-    lName = Label(right1, text="Product Name", font=text_format)
+    lName = Label(right1, text="Product Name", font=("arial", 14))
     lName.grid(row=2, column=0, sticky=W)
 
-    eName = Entry(right1, textvariable=Name, font=text_format)
+    eName = Entry(right1, textvar=Name, font=("arial", 14))
     eName.grid(row=2, column=1, sticky=W, padx=10, pady=10)
-    eName.bind('<Return>', callback1)
     eName.focus()
 
-    lCost = Label(right1, text="Product Cost (CP)", font=text_format)
+    lCost = Label(right1, text="Product Cost (CP)", font=("arial", 14))
     lCost.grid(row=3, column=0, sticky=W)
 
-    eCost = Entry(right1, textvariable=Cost, font=text_format)
+    eCost = Entry(right1, textvar=Cost, font=("arial", 14))
     eCost.grid(row=3, column=1, sticky=W, padx=10, pady=10)
-    eCost.bind('<Return>', callback2)
 
-    lRate = Label(right1, text="Product Rate (SP)", font=text_format)
+    lRate = Label(right1, text="Product Rate (SP)", font=("arial", 14))
     lRate.grid(row=4, column=0, sticky=W)
 
-    eRate = Entry(right1, textvariable=Rate, font=text_format)
+    eRate = Entry(right1, textvar=Rate, font=("arial", 14))
     eRate.grid(row=4, column=1, sticky=W, padx=10, pady=10)
-    eRate.bind('<Return>', callback3)
 
-    lStock = Label(right1, text="Product Stock", font=text_format)
+    lStock = Label(right1, text="Product Stock", font=("arial", 14))
     lStock.grid(row=5, column=0, sticky=W)
 
-    eStock = Entry(right1, textvariable=Stock, font=text_format)
+    eStock = Entry(right1, textvar=Stock, font=("arial", 14))
     eStock.grid(row=5, column=1, sticky=W, padx=10, pady=10)
-    eStock.bind('<Return>', callback4)
 
-    lGST = Label(right1, text="Product GST(%)", font=text_format)
+    lGST = Label(right1, text="Product GST(%)", font=("arial", 14))
     lGST.grid(row=6, column=0, sticky=W)
 
-    eGST = ttk.Combobox(right1, values=gstlst)
+    eGST = ttk.Combobox(right1, value=gstlst)
     for ind, itm in enumerate(gstlst):
         aa = str(GST.get())
         if aa == itm[0:5]:
             eGST.current(ind)
     eGST.config(width=18)
-    eGST.config(font=text_format)
+    eGST.config(font=("arial", 14))
     eGST.grid(row=6, column=1, padx=10, pady=10)
     eGST.config(state='readonly')
-    eGST.bind('<Return>', callback5)
 
-    lUnit = Label(right1, text="Product Unit", font=text_format)
+    lUnit = Label(right1, text="Product Unit", font=("arial", 14))
     lUnit.grid(row=7, column=0, sticky=W)
 
-    eUnit = ttk.Combobox(right1, values=unitlst)
+    eUnit = ttk.Combobox(right1, value=unitlst)
     eUnit.config(width=18)
     for ind, itm in enumerate(unitlst):
         aa = Unit.get()
         if aa == itm[0:4]:
             eUnit.current(ind)
-    eUnit.config(font=text_format)
+    eUnit.config(font=("arial", 14))
     eUnit.grid(row=7, column=1, padx=10, pady=10)
     eUnit.config(state='readonly')
-    eUnit.bind('<Return>', callback6)
 
-    button1 = Button(right1, text="Check", width=7, **button_format, command=Check)
+    def callback(event):
+        eCost.focus()
+
+    eName.bind('<Return>', callback)
+
+    def callback(event):
+        eRate.focus()
+
+    eCost.bind('<Return>', callback)
+
+    def callback(event):
+        eStock.focus()
+
+    eRate.bind('<Return>', callback)
+
+    def callback(event):
+        eGST.focus()
+
+    eStock.bind('<Return>', callback)
+
+    def callback(event):
+        eUnit.focus()
+
+    eGST.bind('<Return>', callback)
+
+    def callback(event):
+        Check()
+
+    eUnit.bind('<Return>', callback)
+
+    button1 = Button(right1, text="Check", width=7, bg="brown", fg="white",
+                     font=('arial', 14), command=Check)
     button1.grid(row=8, column=0, pady=10, columnspan=2, padx=10)
-    button3 = Button(right1, text="Back", width=5, **button_format, command=Back)
+    button3 = Button(right1, text="Back", width=5, bg="brown", fg="white",
+                     font=('arial', 14), command=Back)
     button3.grid(row=8, column=0, pady=10, padx=10, sticky=W)
-    button2 = Button(right1, text="Home", width=5, **button_format, command=Close)
+    button2 = Button(right1, text="Exit", width=5, bg="brown", fg="white",
+                     font=('arial', 14), command=Close)
     button2.grid(row=8, column=1, pady=10, padx=10, sticky=E)
 
 
-""" View Functions """
-def Main_View(): # Select what to View
-    option = {1: View, 2: View, 3: View, 4: View, 5: Main}
-    
-    right.grid(column=0,row=0,padx=350,pady=35)
-    right2 = Frame(right, bd=2, relief=SOLID, padx=50, pady=50)
-    right2.pack(pady=20)
-
-    def Comon(v):
-        right2.destroy()
-        dictt = option.get(v)
-        if v == 5:
-            dictt()
-        else:
-            dictt(v)
-
-    l0 = Label(right2, text="View", font=("arial-bold", 25))
-    l0.grid(row=0, column=0)
-
-    b1 = Button(right2, text="Supplier", width=12, **button_format, command=lambda *args: Comon(1))
-    b1.grid(row=1, column=0, padx=10, pady=10)
-
-    b2 = Button(right2, text="Product", width=12, **button_format, command=lambda *args: Comon(2))
-    b2.grid(row=2, column=0, padx=10, pady=10)
-
-    b3 = Button(right2, text="Bills", width=12, **button_format, command=lambda *args: Comon(3))
-    b3.grid(row=3, column=0, padx=10, pady=10)
-
-    b4 = Button(right2, text="Customer", width=12, **button_format, command=lambda *args: Comon(4))
-    b4.grid(row=4, column=0, padx=10, pady=10)
-
-    b5 = Button(right2, text="Home", width=12, **button_format, command=lambda *args: Comon(5))
-    b5.grid(row=5, column=0, padx=10, pady=10)
-
-def View(Type): # Control what to View
-    right1 = Frame(right, bd=2, relief=SOLID, padx=50, pady=20)
-    right1.pack(pady=20)
-    demodb = mysql.connect(**DB)
+def Bill():
+    right.place(x=75, y=65)
+    right1 = Frame(right, bd=2, relief=SOLID, padx=20, pady=20)
+    right1.pack()
+    down = Frame(right1, bd=1, relief=SOLID)
+    down.grid(row=1, column=0, sticky=W)
+    side = Frame(right1)
+    side.grid(row=0, column=1, rowspan=2, sticky=N)
+    up = Frame(right1)
+    up.grid(row=0, column=0, sticky=W)
+    demodb = mysql.connect(host="localhost", user=us, passwd=pas, database="projectold")
     cursor = demodb.cursor()
+    time = datetime.now()
+    Date = str(time.strftime("%y""%m""%d"))
+    cursor.execute(f"SELECT COUNT(BillID) FROM bill WHERE BillID LIKE '%{Date}%';")
+    D = cursor.fetchone()[0] + 1
+    demodb.close()
+    a = [1, 0, 0]
 
-    if Type == 1:  # Supplier
-        right.grid(row=0,column=0,padx=145,pady=55)
-        cursor.execute(f"SELECT * FROM supplier")
-        supp = list(cursor.fetchall())
+    def Close():
+        right1.destroy()
+        Main()
+        right.place(x=5000, y=80)
+
+    def clock():
+        stri = f"Time:      {stime('%I:%M:%S %p')}"
+        label.config(text=stri)
+        label.after(1000, clock)
+
+    def ProdN(event):
+        value = event.widget.get()
+        if value == '' or value == 'Select Product':
+            data = lst
+        else:
+            data = []
+            for item in lst:
+                if value.lower() in item.lower():
+                    data.append(item)
+        ePName.config(value=data)
+
+    def Add():
+        if len(lst) == 0:
+            ePName.config(state="disabled")
+            return
+        Name = ePName.get()
+        if ePName.get() == 'Select Product':
+            messagebox.showerror("Select Product", "Please Select Product")
+            return
+        try:
+            Qty = int(PQty.get())
+        except ValueError:
+            messagebox.showerror("No Qty", "Please Enter Product Qty")
+            ePqty.focus()
+            return
+        for id, name in prodname.items():
+            if name == Name:
+                PID = id
+        demodb = mysql.connect(host="localhost", user=us, passwd=pas, database="projectold")
+        cursor = demodb.cursor()
+        cursor.execute(f"SELECT SP, GST, Unit, Stock FROM product where ProdID='{PID}'")
+        aa = cursor.fetchone()
+        demodb.close()
+        Pa = aa[0] * Qty
+        Pgst = (Pa * float(aa[1])) / 100
+        Prodtot = round(Pa + Pgst, 2)
+        BBtot= Btot.get() + Prodtot
+        Btot.set(BBtot)
+        eBtot.config(text=f"₹{Btot.get()}")
+        tup = (a[0], Name, Qty, aa[0], Prodtot, aa[1], aa[2])
+        lst1.append([PID, Qty, Prodtot, a[0]])
+        lst2.append(aa[3])
+        a[0] += 1
+        tv.insert('', 'end', values=tup)
+        tv.yview_moveto(1)
+        lst.remove(Name)
+        ePName.config(value=lst)
+        PQty.set('')
+        ePName.focus()
+        ePName.current(0)
+
+    def Modify():
+        if tv.focus() == '':
+            return
+        selected = tv.focus()
+        if a[1] == selected:
+            tup = a[2]
+            abc = float(tup[4])
+            tup[2] = PQty.get()
+            lst1[(a[2][0]) - 1][1] = int(tup[2])
+            Pa = float(tup[3]) * float(tup[2])
+            Pgst = (Pa * float(tup[5])) / 100
+            Prodtot = round(Pa + Pgst, 2)
+            tup[4] = Prodtot
+            BBtot = Btot.get() - abc + Prodtot
+            Btot.set(BBtot)
+            eBtot.config(text=f"₹{Btot.get()}")
+            a[1], a[2] = 0, 1
+            PQty.set('')
+            tv.item(selected, text="", values=tup)
+            button1.config(text='Edit')
+            ePqty.bind('<Return>', callback1)
+            return
+
+        a[1] = selected
+        a[2] = tv.item(selected)['values']
+        ab = tv.item(selected)['values']
+        PQty.set(ab[2])
+        ePqty.focus()
+        button1.config(text='Save')
+
+        def callback(event):
+            Modify()
+
+        ePqty.bind('<Return>', callback)
+
+    def Remve():
+        if tv.focus() == '':
+            return
+        x = tv.focus()
+        aa = tv.item(x)['values']
+        ba = int(aa[0]) - 1
+        lst.insert(1, aa[1])
+        lst1.pop(ba)
+        lst2.pop(ba)
+        a[0] -= 1
+        BBtot = Btot.get() - float(aa[4])
+        Btot.set(BBtot)
+        eBtot.config(text=f"₹{Btot.get()}")
+        ePName.config(value=lst)
+        tv.delete(x)
+
+    def Clear():
+        global lst
+        for item in tv.get_children():
+            tv.delete(item)
+        lst = ['Select Product']
+        for i in prodname.values():
+            lst.append(i)
+        ePName.config(value=lst)
+        PQty.set('')
+        Bdic.set('')
+        CName.set('')
+        Btot.set(0.0)
+        eBtot.config(text=f"₹{Btot.get()}")
+
+
+    def Check():
+        if a[0] == 1:
+            return
+        CustName = CName.get()
+        if CustName == '':
+            CustName = 'Customer'
+        CustID = cust_gen(CustName, us, pas)
+        tme = datetime.now()
+        BillNos = f'{tme.strftime("%y""%m""%d")}{CustID}-{D}'
+        if Bdic.get() == '':
+            disc = 0.0
+        elif float(Bdic.get()) > 100:
+            messagebox.showerror("Negetive Ruprees", "Please Enter discount percentage \nbetween 0 to 100")
+            Bdic.set('')
+            return
+        else:
+            disc = float(Bdic.get())
+        BillAmt = Btot.get()
+        for i in range(0, a[0] - 1):
+            lst1[i].insert(0, BillNos)
+            stk = lst2[i] - lst1[i][2]
+            tup = (lst1[i][1], stk)
+            Update_other(1, tup, us, pas)
+
+        BillDisc = round(BillAmt * disc / 100, 2)
+        BillNet = BillAmt - BillDisc
+        BillDate = f'{tme.strftime("%Y")}-{tme.strftime("%m")}-{tme.strftime("%d")} {tme.strftime("%H:%M:%S")}'
+
+        tup = (BillNos, CustID, CustName, BillDate, a[0] - 1, BillAmt, disc, BillNet)
+        Create(3, tup, us, pas)
+        for tup1 in lst1:
+            Create(4, tup1, us, pas)
+
+        QA = messagebox.askquestion("Print Pdf", f"Bill has been genrated.\nDo you want to print bill?")
+        if QA == 'yes':
+            PDF(BillNos)
+        Clear()
+
+    lst = ['Select Product']
+    lst1 = []
+    lst2 = []
+    for i in prodname.values():
+        lst.append(i)
+    data = list(lst)
+
+    scroll = Scrollbar(down)
+    scroll.pack(side=RIGHT, fill=Y)
+    tv = ttk.Treeview(down, columns=('col0', 'col1', 'col2', 'col3', 'col4', 'col5', 'col6'), show='headings',
+                      height=10, yscrollcommand=scroll.set, style="mystyle.Treeview")
+    tv.pack()
+    scroll.config(command=tv.yview)
+
+    tv.heading('col0', text='Sr No.')
+    tv.heading('col1', text='Product Name')
+    tv.heading('col2', text='Qty')
+    tv.heading('col3', text='Rate')
+    tv.heading('col4', text='Price')
+    tv.heading('col5', text='GST')
+    tv.heading('col6', text='Unit')
+
+    tv.column('col0', anchor=CENTER, width=50)
+    tv.column('col1', anchor=CENTER, width=150)
+    tv.column('col2', anchor=CENTER, width=55)
+    tv.column('col3', anchor=CENTER, width=100)
+    tv.column('col4', anchor=CENTER, width=100)
+    tv.column('col5', anchor=CENTER, width=60)
+    tv.column('col6', anchor=CENTER, width=60)
+
+    CName = StringVar()
+    PQty = StringVar()
+    Bdic = StringVar()
+    Btot = DoubleVar()
+
+    label = Label(up, font=("arial", 14))
+    label.grid(row=0, column=2, sticky=W, columnspan=2)
+    clock()
+
+    lBtot = Label(up, text="Bill Total:", font=("arial", 14))
+    lBtot.grid(row=1, column=0, sticky=W)
+
+    eBtot = Label(up, text=f"₹{Btot.get()}", font=("arial", 14))
+    eBtot.grid(row=1, column=1, sticky=W, padx=10, pady=10)
+
+    lCName = Label(up, text="Customer Name:", font=("arial", 14))
+    lCName.grid(row=0, column=0, sticky=W)
+
+    eCName = Entry(up, textvar=CName, width=18, font=("arial", 14))
+    eCName.grid(row=0, column=1, sticky=W, padx=10, pady=10)
+    eCName.focus()
+
+    lBdis = Label(up, text="Bill Discount(%):", font=("arial", 14))
+    lBdis.grid(row=1, column=2, sticky=W)
+
+    eBdis = Entry(up, textvar=Bdic, width=4, font=("arial", 14))
+    eBdis.grid(row=1, column=3, sticky=W, padx=10, pady=10)
+
+    lPName = Label(up, text="Product Name:", font=("arial", 14))
+    lPName.grid(row=2, column=0, sticky=W)
+
+    ePName = ttk.Combobox(up, value=data)
+    ePName.current(0)
+    ePName.configure(width=18, font=("arial", 14))
+    ePName.grid(row=2, column=1)
+    ePName.bind('<KeyRelease>', ProdN)
+
+    lPqty = Label(up, text="Product Qty.:", font=("arial", 14))
+    lPqty.grid(row=2, column=2, sticky=W)
+
+    ePqty = Entry(up, textvar=PQty, width=4, font=("arial", 14))
+    ePqty.grid(row=2, column=3, sticky=W, padx=10, pady=10)
+
+    def callback(event):
+        ePName.focus()
+
+    eCName.bind('<Return>', callback)
+
+    def callback(event):
+        ePqty.focus()
+
+    ePName.bind('<Return>', callback)
+
+    def callback1(event):
+        ePName.focus()
+        Add()
+
+    ePqty.bind('<Return>', callback1)
+
+    button0 = Button(side, text="Add", width=12, bg="brown", fg="white", font=('arial', 14), command=Add)
+    button0.grid(row=0, column=0, sticky=W, pady=10, padx=10)
+
+    button1 = Button(side, text="Edit", width=12, bg="brown", fg="white", font=('arial', 14), command=Modify)
+    button1.grid(row=1, column=0, sticky=W, pady=10, padx=10)
+
+    button2 = Button(side, text="Delete", width=12, bg="brown", fg="white", font=('arial', 14), command=Remve)
+    button2.grid(row=2, column=0, sticky=W, pady=10, padx=10)
+
+    button3 = Button(side, text="Bill", width=12, bg="brown", fg="white", font=('arial', 14), command=Check)
+    button3.grid(row=3, column=0, sticky=W, pady=10, padx=10)
+
+    button3 = Button(side, text="Clear", width=12, bg="brown", fg="white", font=('arial', 14), command=Clear)
+    button3.grid(row=4, column=0, sticky=W, pady=10, padx=10)
+
+    button5 = Button(side, text="Cancel", width=12, bg="brown", fg="white", font=('arial', 14), command=Close)
+    button5.grid(row=5, column=0, sticky=E, pady=10, padx=10)
+
+
+def PDF(Bill):
+    Pdf(Bill, us, pas)
+
+
+def View(Type):
+    right1 = Frame(right, bd=2, relief=SOLID, padx=50, pady=50)
+    right1.pack()
+    demodb = mysql.connect(host="localhost", user=us, passwd=pas, database="projectold")
+    cursor = demodb.cursor()
+    cursor.execute(f"SELECT BillID, Name, Date, Qty, Total FROM bill order by Date")
+    bills = list(cursor.fetchall())
+    cursor.execute(f"SELECT * FROM supplier")
+    supp = list(cursor.fetchall())
+    cursor.execute(f"SELECT ProdID, Name, Stock, SP, Hide FROM product")
+    prod = list(cursor.fetchall())
+    demodb.close()
+
+    if Type == 1:
+        right.place(x=145, y=75)
         lst2 = supp
-        l1 = Label(right1, text="Suppliers", font=("arial-bold", 25))
-        l1.grid(row=0, column=0,pady=20)
-        right2 = LabelFrame(right1,text="Supplier", bd=1, relief=SOLID)
+        right2 = LabelFrame(right1, text='Suppliers', bd=1, relief=SOLID)
         right2.grid(row=1, column=0)
         scroll = Scrollbar(right2)
         scroll.pack(side=RIGHT, fill=Y)
@@ -1684,24 +1193,23 @@ def View(Type): # Control what to View
         def close():
             right1.destroy()
             Main()
+            right.place(x=5000, y=80)
 
         def back():
             right1.destroy()
             Main_View()
+            right.place(x=5000, y=80)
 
-        b1 = Button(right1, text='Back', width=12, **button_format, command=back)
-        b1.grid(row=3, column=0, sticky=W,pady=20)
-        b2 = Button(right1, text="Home", width=12, **button_format, command=close)
+        b1 = Button(right1, text='Back', font=('arial', 14), width=12, bg="brown", fg="white", command=back)
+        b1.grid(row=3, column=0, sticky=W)
+        l1 = Label(right1, text="Suppliers", font=("arial-bold", 25))
+        l1.grid(row=0, column=0)
+        b2 = Button(right1, text="Close", font=('arial', 14), width=12, bg="brown", fg="white", command=close)
         b2.grid(row=3, column=0, sticky=E)
-        demodb.close()
 
-    elif Type == 2:  # Products
-        right.grid(row=0,column=0,padx=200,pady=45)
-        cursor.execute(f"SELECT ProdID, Name, Stock, SP, Hide FROM product")
-        prod = list(cursor.fetchall())
+    elif Type == 2:
+        right.place(x=155, y=75)
         lst2 = prod
-        l1 = Label(right1, text="Products", font=("arial-bold", 25))
-        l1.grid(row=0, column=0,pady=20)
         right2 = LabelFrame(right1, text='Products', bd=1, relief=SOLID)
         right2.grid(row=1, column=0)
         scroll = Scrollbar(right2)
@@ -1734,10 +1242,57 @@ def View(Type): # Control what to View
         def close():
             right1.destroy()
             Main()
+            right.place(x=5000, y=80)
 
         def back():
             right1.destroy()
+            right.place(x=5000, y=80)
             Main_View()
+
+        def back1():
+            right1.destroy()
+            View(2)
+
+        def detail(tup):
+            right.place(x=175, y=80)
+            tv.destroy()
+            scroll.destroy()
+            b3.destroy()
+            right2.destroy()
+            l1.config(text="Product Details")
+            b1.config(command=back1)
+
+            demodb = mysql.connect(host="localhost", user=us, passwd=pas, database="projectold")
+            cursor = demodb.cursor()
+            cursor.execute(f"SELECT * FROM product where ProdID = '{tup}'")
+            bill2 = list(cursor.fetchone())
+            demodb.close()
+
+            right3 = Frame(right1)
+            right3.grid(row=1, column=0, pady=10)
+
+            a = f'Supplier ID: {bill2[0]}'
+            b = f'Product ID: {bill2[1]}'
+            c = f'Name: {bill2[2]}'
+            d = f'Cost Price(CP): ₹{bill2[3]}'
+            e = f'Selling Price(SP): ₹{bill2[4]}'
+            f = f'GST: {bill2[5]} %'
+            g = f'Unit: {bill2[6]}'
+            h = f'Stock: {bill2[7]}'
+            if bill2[8] == 'Y':
+                bill2[8] = 'Discontinued'
+            elif bill2[8] == 'N':
+                bill2[8] = 'Active'
+            i = f'Status: {bill2[8]}'
+            Label(right3, text=a, font=("arial", 14)).grid(row=0, column=0, sticky=W, padx=10)
+            Label(right3, text=b, font=("arial", 14)).grid(row=0, column=1, sticky=W, padx=10)
+            Label(right3, text=c, font=("arial", 14)).grid(row=1, column=0, sticky=W, padx=10, pady=5)
+            Label(right3, text=f, font=("arial", 14)).grid(row=1, column=1, sticky=W, padx=10)
+            Label(right3, text=d, font=("arial", 14)).grid(row=2, column=0, sticky=W, padx=10)
+            Label(right3, text=e, font=("arial", 14)).grid(row=2, column=1, sticky=W, padx=10)
+            Label(right3, text=g, font=("arial", 14)).grid(row=3, column=0, sticky=W, padx=10, pady=5)
+            Label(right3, text=i, font=("arial", 14)).grid(row=3, column=1, sticky=W, padx=10)
+            Label(right3, text=h, font=("arial", 14)).grid(row=4, column=0, sticky=W, padx=10)
 
         def ab():
             item = tv.item(tv.focus())
@@ -1746,99 +1301,25 @@ def View(Type): # Control what to View
             except:
                 return
             tup = item['values'][0]
-            right1.destroy()
-            Products_View(tup)
+            detail(tup)
 
         def click(event):
             ab()
 
         tv.bind('<Double 1>', click)
-        b1 = Button(right1, text='Back', width=10,**button_format, command=back)
-        b1.grid(row=3, column=0, sticky=W,pady=20)
-        b2 = Button(right1, text="Home", width=10,**button_format, command=close)
-        b2.grid(row=3, column=0, sticky=E)
-        b3 = Button(right1, text="Next", width=10,**button_format, command=ab)
-        b3.grid(row=3, column=0)
-        demodb.close()
-
-    elif Type == 3:  # Bills
-        right.grid(row=0,column=0,padx=65,pady=40)
-        cursor.execute(f"SELECT bill.BillID, cust.Name, bill.Type, bill.Date, bill.Qty, bill.Balance, bill.Total FROM "
-                   f"bill,cust where bill.CustID=cust.CustID order by Date;")
-        bills = list(cursor.fetchall())
-        lst2 = bills
-        l1 = Label(right1, text="Bills", font=("arial-bold", 25))
-        l1.grid(row=0, column=0,pady=20)
-        right2 = LabelFrame(right1, text='Bills', bd=1, relief=SOLID)
-        right2.grid(row=1, column=0)
-        scroll = Scrollbar(right2)
-        scroll.pack(side=RIGHT, fill=Y)
-        tv = ttk.Treeview(right2, columns=('col0', 'col1', 'col2', 'col3', 'col4', 'col5', 'col6'), show='headings'
-                          , height=8, yscrollcommand=scroll.set, style="mystyle.Treeview")
-        tv.pack()
-        scroll.config(command=tv.yview)
-
-        tv.heading('col0', text='Bill No.')
-        tv.heading('col1', text='Cust. Name')
-        tv.heading('col2', text='Bill Type')
-        tv.heading('col3', text='Bill Date')
-        tv.heading('col4', text='No. Items')
-        tv.heading('col5', text='Bill Balance')
-        tv.heading('col6', text='Bill Total')
-
-        tv.column('col0', anchor=CENTER, width=100)
-        tv.column('col1', anchor=CENTER, width=100)
-        tv.column('col2', anchor=CENTER, width=100)
-        tv.column('col3', anchor=CENTER, width=100)
-        tv.column('col4', anchor=CENTER, width=100)
-        tv.column('col5', anchor=CENTER, width=100)
-        tv.column('col6', anchor=CENTER, width=100)
-
-        for i in lst2:
-            i = list(i)
-            zz = str(i[3]).split()[0]
-            i[3] = zz.split('-')[2] + '/' + zz.split('-')[1] + '/' + zz.split('-')[0]
-            tv.insert('', 'end', values=i)
-
-        def close():
-            right1.destroy()
-            Main()
-
-        def back():
-            right1.destroy()
-            Main_View()
-
-        def ab():
-            item = tv.item(tv.focus())
-            try:
-                item['values'][0]
-            except:
-                return
-            tup = item['values'][0]
-            tup1 = item['values'][3]
-            right1.destroy()
-            Bill_View(tup, tup1)
-
-        def click(event):
-            ab()
-
-        tv.bind('<Double 1>', click)
-        b1 = Button(right1, text='Back', width=12, **button_format, command=back)
+        b1 = Button(right1, text='Back', font=('arial', 14), width=10, bg="brown", fg="white", command=back)
         b1.grid(row=3, column=0, sticky=W)
-        b2 = Button(right1, text="Home", width=12, **button_format, command=close)
-        b2.grid(row=3, column=0, sticky=E,pady=20)
-        b3 = Button(right1, text="Next", width=12, **button_format, command=ab)
+        l1 = Label(right1, text="Products", font=("arial-bold", 25))
+        l1.grid(row=0, column=0)
+        b2 = Button(right1, text="Close", font=('arial', 14), width=10, bg="brown", fg="white", command=close)
+        b2.grid(row=3, column=0, sticky=E)
+        b3 = Button(right1, text="Next", font=('arial', 14), width=10, bg="brown", fg="white", command=ab)
         b3.grid(row=3, column=0)
-        demodb.close()
 
-    elif Type == 4:  # Customers
-        right.grid(row=0,column=0,padx=200,pady=45)
-        cursor.execute(f"SELECT CustID,Name,Qty,Balance,Total FROM cust;")
-        cust = list(cursor.fetchall())
-        lst2 = cust
-        l1 = Label(right1, text="Customers", font=("arial-bold", 25))
-        l1.grid(row=0, column=0,pady=20)
-        right2 = LabelFrame(right1, text='Customers', bd=1, relief=SOLID)
+    elif Type == 3:
+        right.place(x=160, y=75)
+        lst2 = bills
+        right2 = LabelFrame(right1, text='Bills', bd=1, relief=SOLID)
         right2.grid(row=1, column=0)
         scroll = Scrollbar(right2)
         scroll.pack(side=RIGHT, fill=Y)
@@ -1847,29 +1328,104 @@ def View(Type): # Control what to View
         tv.pack()
         scroll.config(command=tv.yview)
 
-        tv.heading('col0', text='Customer ID')
-        tv.heading('col1', text='Customer Name')
-        tv.heading('col2', text='Qty')
-        tv.heading('col3', text='Balance')
-        tv.heading('col4', text='Total')
+        tv.heading('col0', text='Bill No.')
+        tv.heading('col1', text='Cust. Name')
+        tv.heading('col2', text='Bill Date')
+        tv.heading('col3', text='No. Items')
+        tv.heading('col4', text='Bill Total')
 
-        tv.column('col0', anchor=CENTER, width=110)
-        tv.column('col1', anchor=CENTER, width=155)
-        tv.column('col2', anchor=CENTER, width=50)
+        tv.column('col0', anchor=CENTER, width=100)
+        tv.column('col1', anchor=CENTER, width=100)
+        tv.column('col2', anchor=CENTER, width=100)
         tv.column('col3', anchor=CENTER, width=100)
         tv.column('col4', anchor=CENTER, width=100)
 
         for i in lst2:
             i = list(i)
+            zz = str(i[2]).split()[0]
+            i[2] = zz.split('-')[2] + '/' + zz.split('-')[1] + '/' + zz.split('-')[0]
             tv.insert('', 'end', values=i)
 
         def close():
             right1.destroy()
+            right.place(x=5000, y=80)
             Main()
 
         def back():
             right1.destroy()
+            right.place(x=200, y=50)
             Main_View()
+
+        def back1():
+            right1.destroy()
+            View(3)
+
+        def detail(tup, tup1):
+            right.place(x=100, y=25)
+            tv.destroy()
+            scroll.destroy()
+            b3.destroy()
+            l1.config(text="Bill Details")
+            right2.config(text='Bill Items')
+            b1.config(command=back1)
+
+            demodb = mysql.connect(host="localhost", user=us, passwd=pas, database="projectold")
+            cursor = demodb.cursor()
+            cursor.execute(f"SELECT * FROM billdetail where BillID = '{tup}'")
+            det = cursor.fetchall()
+            cursor.execute(f"SELECT * FROM bill where BillID = '{tup}'")
+            bill2 = cursor.fetchone()
+            demodb.close()
+
+            roll = Scrollbar(right2)
+            roll.pack(side=RIGHT, fill=Y)
+            ttv = ttk.Treeview(right2, columns=('col0', 'col1', 'col2', 'col3', 'col4'), show='headings',
+                               height=8, yscrollcommand=roll.set, style="mystyle.Treeview")
+            ttv.pack()
+            roll.config(command=ttv.yview)
+
+            ttv.heading('col0', text='Sr No.')
+            ttv.heading('col1', text='Product ID')
+            ttv.heading('col2', text='Product Name')
+            ttv.heading('col3', text='Qty')
+            ttv.heading('col4', text='Total')
+
+            ttv.column('col0', anchor=CENTER, width=100)
+            ttv.column('col1', anchor=CENTER, width=100)
+            ttv.column('col2', anchor=CENTER, width=100)
+            ttv.column('col3', anchor=CENTER, width=100)
+            ttv.column('col4', anchor=CENTER, width=100)
+
+            for i in det:
+                i = list(i)
+                a = i.pop()
+                i.insert(0, a)
+                i[1] = i[2]
+                if i[2] in prodname:
+                    i[2] = prodname[i[2]]
+                ttv.insert('', 'end', values=i)
+
+            right3 = Frame(right1)
+            right3.grid(row=2, column=0, pady=10)
+
+            a = f'Bill No.: {bill2[0]}'
+            b = f'Customer ID: {bill2[1]}'
+            c = f'Customer Name: {bill2[2]}'
+            d = f'Date: {tup1}'
+            e = f'Discount: {abs(round(bill2[7] - bill2[5], 2))}({bill2[6]}%)'
+            f = f'Total: ₹{bill2[7]}'
+            Label(right3, text=a, font=("arial", 14)).grid(row=0, column=0, sticky=W)
+            Label(right3, text=b, font=("arial", 14)).grid(row=0, column=1, padx=20, pady=5, sticky=W)
+            Label(right3, text=d, font=("arial", 14)).grid(row=0, column=2, sticky=W)
+            Label(right3, text=c, font=("arial", 14)).grid(row=1, column=0, sticky=W)
+            Label(right3, text=e, font=("arial", 14)).grid(row=1, column=1, padx=20, pady=5, sticky=W)
+            Label(right3, text=f, font=("arial", 14)).grid(row=1, column=2, sticky=W)
+
+            def aa1():
+                PDF(bill2[0])
+
+            b4 = Button(right1, text='Make Bill', font=('arial', 14), width=12, bg="brown", fg="white", command=aa1)
+            b4.grid(row=3, column=0)
 
         def ab():
             item = tv.item(tv.focus())
@@ -1878,396 +1434,470 @@ def View(Type): # Control what to View
             except:
                 return
             tup = item['values'][0]
-            right1.destroy()
-            Cust_View(tup)
+            tup1 = item['values'][2]
+            detail(tup, tup1)
 
         def click(event):
             ab()
 
         tv.bind('<Double 1>', click)
-        b1 = Button(right1, text='Back', width=10, **button_format, command=back)
-        b1.grid(row=3, column=0, sticky=W,pady=20)
-        b2 = Button(right1, text="Home", width=10, **button_format, command=close)
+        b1 = Button(right1, text='Back', font=('arial', 14), width=12, bg="brown", fg="white", command=back)
+        b1.grid(row=3, column=0, sticky=W)
+        l1 = Label(right1, text="Bills", font=("arial-bold", 25))
+        l1.grid(row=0, column=0)
+        b2 = Button(right1, text="Close", font=('arial', 14), width=12, bg="brown", fg="white", command=close)
         b2.grid(row=3, column=0, sticky=E)
-        b3 = Button(right1, text="Next", width=10, **button_format, command=ab)
+        b3 = Button(right1, text="Next", font=('arial', 14), width=12, bg="brown", fg="white", command=ab)
         b3.grid(row=3, column=0)
-        demodb.close()
 
-def Products_View(ProdID): # View Products
-    right.grid(row=0,column=0,padx=100,pady=85)
-    right1 = Frame(right, bd=2, relief=SOLID, padx=50, pady=20)
-    right1.pack()
+
+def Main_Add():
+    left2 = Frame(window, bd=2, relief=SOLID, padx=50, pady=50)
+    left2.place(x=350, y=80)
 
     def Close():
-        right1.destroy()
+        left2.destroy()
+
+    def Close1():
+        left2.destroy()
+        Main()
+        right.place(x=5000, y=80)
+
+    def Supp():
+        Close()
+        Suppdetail()
+
+    def Prod():
+        Close()
+        Products()
+
+    b1 = Button(left2, text="Supplier", width=12, bg="brown", fg="white", font=('arial', 14), command=Supp)
+    b1.grid(row=1, column=0, padx=10, pady=10)
+
+    b2 = Button(left2, text="Product", width=12, bg="brown", fg="white", font=('arial', 14), command=Prod)
+    b2.grid(row=2, column=0, padx=10, pady=10)
+
+    b3 = Label(left2, text="New", font=("arial-bold", 25))
+    b3.grid(row=0, column=0, padx=10, pady=10)
+
+    b4 = Label(left2, text=" ", font=("arial", 14))
+    b4.grid(row=4, column=0, padx=10, pady=11)
+
+    b5 = Button(left2, text="Exit", width=12, bg="brown", fg="white", font=('arial', 14), command=Close1)
+    b5.grid(row=5, column=0, padx=10, pady=10)
+
+
+def Main_Mod():
+    left2 = Frame(window, bd=2, relief=SOLID, padx=50, pady=50)
+    left2.place(x=350, y=50)
+
+    def Close():
+        left2.destroy()
+
+    def Close1():
+        left2.destroy()
+        Main()
+        right.place(x=5000, y=80)
+
+    def back():
+        left2.destroy()
+        Main_Mod()
+
+    def Supp():
+        left2.place(x=350, y=80)
+        b2.destroy()
+        b1.destroy()
+        b3.destroy()
+        b4.destroy()
+        Label(left2, text="Supplier", font=("arial bold", 20)).grid(row=0, column=0)
+        SID = StringVar()
+
+        def Check():
+            if eSID.get() == 'Select Supplier':
+                messagebox.showerror("Wrong Format", "Select Supplier")
+                return
+            else:
+                SID.set(eSID.get())
+                SuppID = SID.get()[0:3]
+                Close()
+                Suppdetail_Edit(SuppID)
+
+        eSID = ttk.Combobox(left2, value=supplst)
+        eSID.config(width=12)
+        eSID.config(font=("arial", 14))
+        eSID.current(0)
+        eSID.grid(row=2, column=0, pady=20)
+        eSID.config(state='readonly')
+        eSID.focus()
+
+        b6 = Button(left2, text="Proceed", width=12, bg="brown", fg="white", font=('arial', 14), command=Check)
+        b6.grid(row=3, column=0, padx=10, pady=10)
+
+        b7 = Button(left2, text="Back", width=12, bg="brown", fg="white", font=('arial', 14), command=back)
+        b7.grid(row=4, column=0, padx=10, pady=10)
+
+        def callback(event):
+            Check()
+
+        eSID.bind('<Return>', callback)
+
+    def Prod():
+        left2.place(x=350, y=80)
+        b1.destroy()
+        b2.destroy()
+        b3.destroy()
+        b4.destroy()
+        Label(left2, text="Product", font=("arial bold", 20)).grid(row=0, column=0)
+        SID = StringVar()
+
+        def Check():
+            if eSID.get() == 'Select Product':
+                messagebox.showerror("Wrong Format", "Select Product")
+                return
+            else:
+                SID.set(eSID.get())
+                ProdID = SID.get()[0:6]
+                Close()
+                Products_Edit(ProdID)
+
+        eSID = ttk.Combobox(left2, value=prodlst)
+        eSID.config(width=12)
+        eSID.config(font=("arial", 14))
+        eSID.current(0)
+        eSID.grid(row=2, column=0, pady=20)
+        eSID.config(state='readonly')
+        eSID.focus()
+
+        b6 = Button(left2, text="Proceed", width=12, bg="brown", fg="white", font=('arial', 14), command=Check)
+        b6.grid(row=3, column=0, padx=10, pady=10)
+
+        b7 = Button(left2, text="Back", width=12, bg="brown", fg="white", font=('arial', 14), command=back)
+        b7.grid(row=4, column=0, padx=10, pady=10)
+
+        def callback(event):
+            Check()
+
+        eSID.bind('<Return>', callback)
+
+    def Delsupp():
+        right.place(x=145, y=80)
+        Close()
+        right1 = Frame(right, bd=2, relief=SOLID, padx=50, pady=50)
+        right1.pack()
+        demodb = mysql.connect(host="localhost", user=us, passwd=pas, database="projectold")
+        cursor = demodb.cursor()
+        cursor.execute(f"SELECT * FROM supplier")
+        lst2 = list(cursor.fetchall())
+        demodb.close()
+        right2 = LabelFrame(right1, text='Suppliers', bd=1, relief=SOLID)
+        right2.grid(row=1, column=0)
+        scroll = Scrollbar(right2)
+        scroll.pack(side=RIGHT, fill=Y)
+        tv = ttk.Treeview(right2, columns=('col0', 'col1', 'col2', 'col3', 'col4', 'col5'),
+                          show='headings', height=8, yscrollcommand=scroll.set, style="mystyle.Treeview")
+        tv.pack()
+        scroll.config(command=tv.yview)
+
+        tv.heading('col0', text='Id')
+        tv.heading('col1', text='Name')
+        tv.heading('col2', text='Address')
+        tv.heading('col3', text='Phone No.')
+        tv.heading('col4', text='Email')
+        tv.heading('col5', text='Status')
+
+        tv.column('col0', anchor=CENTER, width=50)
+        tv.column('col1', anchor=CENTER, width=100)
+        tv.column('col2', anchor=CENTER, width=100)
+        tv.column('col3', anchor=CENTER, width=100)
+        tv.column('col4', anchor=CENTER, width=100)
+        tv.column('col5', anchor=CENTER, width=100)
+
+        for i in lst2:
+            i = list(i)
+            if i[5] == 'Y':
+                i[5] = 'Discontinued'
+            elif i[5] == 'N':
+                i[5] = 'Active'
+            tv.insert('', 'end', values=i)
+
+        def close():
+            right1.destroy()
+            Main()
+            right.place(x=5000, y=80)
+
+        def ab():
+            item = tv.item(tv.focus())['values']
+            try:
+                item[0]
+            except:
+                return 0
+            if item[5] == 'Discontinued':
+                item[5] = 0
+            elif item[5] == 'Active':
+                item[5] = 1
+            tup = (item[0], item[5])
+            Update_other(2, tup, us, pas)
+            alist()
+            if item[5] == 1:
+                item[5] = 'Discontinued'
+            elif item[5] == 0:
+                item[5] = 'Active'
+            selected = tv.focus()
+            tv.item(selected, text="", values=item)
+
+        def click(event):
+            ab()
+
+        tv.bind('<Double 1>', click)
+
+        def back():
+            left2.destroy()
+            right1.destroy()
+            Main_Mod()
+
+        b1 = Button(right1, text='Back', font=('arial', 14), width=12, bg="brown", fg="white", command=back)
+        b1.grid(row=3, column=0, sticky=W)
+        l1 = Label(right1, text="Change Supplier Status", font=("arial-bold", 25))
+        l1.grid(row=0, column=0)
+        b2 = Button(right1, text="Close", font=('arial', 14), width=12, bg="brown", fg="white", command=close)
+        b2.grid(row=3, column=0, sticky=E)
+        b3 = Button(right1, text="Change Status", font=('arial', 14), width=12, bg="brown", fg="white", command=ab)
+        b3.grid(row=3, column=0)
+
+    def Delprod():
+        right.place(x=200, y=80)
+        Close()
+        right1 = Frame(right, bd=2, relief=SOLID, padx=50, pady=50)
+        right1.pack()
+        demodb = mysql.connect(host="localhost", user=us, passwd=pas, database="projectold")
+        cursor = demodb.cursor()
+        cursor.execute(f"SELECT ProdID, Name, Stock, SP, Hide FROM product")
+        lst2 = list(cursor.fetchall())
+        demodb.close()
+        right2 = LabelFrame(right1, text='Suppliers', bd=1, relief=SOLID)
+        right2.grid(row=1, column=0)
+        scroll = Scrollbar(right2)
+        scroll.pack(side=RIGHT, fill=Y)
+        tv = ttk.Treeview(right2, columns=('col0', 'col1', 'col2', 'col3', 'col4'),
+                          show='headings', height=8, yscrollcommand=scroll.set, style="mystyle.Treeview")
+        tv.pack()
+        scroll.config(command=tv.yview)
+
+        tv.heading('col0', text='Id')
+        tv.heading('col1', text='Name')
+        tv.heading('col2', text='Stock')
+        tv.heading('col3', text='SP')
+        tv.heading('col4', text='Status')
+
+        tv.column('col0', anchor=CENTER, width=125)
+        tv.column('col1', anchor=CENTER, width=175)
+        tv.column('col2', anchor=CENTER, width=50)
+        tv.column('col3', anchor=CENTER, width=100)
+        tv.column('col4', anchor=CENTER, width=100)
+
+        for i in lst2:
+            i = list(i)
+            if i[4] == 'Y':
+                i[4] = 'Discontinued'
+            elif i[4] == 'N':
+                i[4] = 'Active'
+            tv.insert('', 'end', values=i)
+
+        def close():
+            right1.destroy()
+            Main()
+            right.place(x=5000, y=80)
+
+        def ab():
+            item = tv.item(tv.focus())['values']
+            try:
+                item[0]
+            except:
+                return 0
+            if item[4] == 'Discontinued':
+                item[4] = 0
+            elif item[4] == 'Active':
+                item[4] = 1
+            tup = (item[0], item[4])
+            Update_other(3, tup, us, pas)
+            alist()
+            if item[4] == 1:
+                item[4] = 'Discontinued'
+            elif item[4] == 0:
+                item[4] = 'Active'
+            selected = tv.focus()
+            tv.item(selected, text="", values=item)
+
+        def click(event):
+            ab()
+
+        tv.bind('<Double 1>', click)
+
+        def back():
+            left2.destroy()
+            right1.destroy()
+            Main_Mod()
+
+        b1 = Button(right1, text='Back', font=('arial', 14), width=12, bg="brown", fg="white", command=back)
+        b1.grid(row=3, column=0, sticky=W)
+        l1 = Label(right1, text="Change Product Status", font=("arial-bold", 25))
+        l1.grid(row=0, column=0)
+        b2 = Button(right1, text="Close", font=('arial', 14), width=12, bg="brown", fg="white", command=close)
+        b2.grid(row=3, column=0, sticky=E)
+        b3 = Button(right1, text="Change Status", font=('arial', 14), width=12, bg="brown", fg="white", command=ab)
+        b3.grid(row=3, column=0)
+
+    b1 = Button(left2, text="Supplier", width=12, bg="brown", fg="white", font=('arial', 14), command=Supp)
+    b1.grid(row=1, column=0, padx=10, pady=10)
+
+    b2 = Button(left2, text="Product", width=12, bg="brown", fg="white", font=('arial', 14), command=Prod)
+    b2.grid(row=2, column=0, padx=10, pady=10)
+
+    b3 = Button(left2, text="Supplier Status", width=12, bg="brown", fg="white",
+                font=('arial', 14), command=Delsupp)
+    b3.grid(row=3, column=0, padx=10, pady=10)
+
+    b4 = Button(left2, text="Product Status", width=12, bg="brown", fg="white",
+                font=('arial', 14), command=Delprod)
+    b4.grid(row=4, column=0, padx=10, pady=10)
+
+    b6 = Label(left2, text="Modify", font=("arial-bold", 25))
+    b6.grid(row=0, column=0)
+
+    b5 = Button(left2, text="Exit", width=12, bg="brown", fg="white", font=('arial', 14), command=Close1)
+    b5.grid(row=5, column=0, padx=10, pady=10)
+
+
+def Main_Bill():
+    Bill()
+
+
+def Main_View():
+    left2 = Frame(window, bd=2, relief=SOLID, padx=50, pady=50)
+    left2.place(x=350, y=80)
+
+    def Close():
+        left2.destroy()
+        right.place(x=5000, y=80)
         Main()
 
-    def Back():
-        right1.destroy()
+    def cc():
+        left2.destroy()
+        View(1)
+
+    def cc1():
+        left2.destroy()
         View(2)
 
-    ID = StringVar()
-    Name = StringVar()
-    Cost = StringVar()
-    Rate = StringVar()
-    GST = StringVar()
-    Unit = StringVar()
-    Stock = StringVar()
-    SID = StringVar()
-    State = StringVar()
-
-    demodb = mysql.connect(**DB)
-    cursor = demodb.cursor()
-    sql = f"SELECT * FROM product where product.ProdID='{ProdID}';"
-    cursor.execute(sql)
-    i:tuple = cursor.fetchone()
-    SID.set(i[0])
-    ID.set(i[1])
-    Name.set(i[2])
-    Cost.set(i[3])
-    Rate.set(i[4])
-    GST.set(i[5])
-    Unit.set(i[6])
-    Stock.set(i[7])
-    if i[8] == 'Y':
-        State.set('Discontinued')
-    elif i[8] == 'N':
-        State.set('Active')
-    demodb.close()
-
-    lSID = Label(right1, text="Supplier", font=text_format)
-    lSID.grid(row=0, column=0, sticky=W)
-    eSID = Entry(right1, textvariable=SID, state='readonly', font=text_format)
-    eSID.grid(row=0, column=1, sticky=W, padx=10, pady=10)
-
-    lID = Label(right1, text="Product ID", font=text_format)
-    lID.grid(row=0, column=2, sticky=W)
-    eID = Entry(right1, textvariable=ID, state='readonly', font=text_format, width=8)
-    eID.grid(row=0, column=3, sticky=W, padx=10, pady=10)
-
-    lName = Label(right1, text="Product Name", font=text_format)
-    lName.grid(row=1, column=0, sticky=W)
-    eName = Entry(right1, textvariable=Name, state='readonly', font=text_format)
-    eName.grid(row=1, column=1, sticky=W, padx=10, pady=10)
-
-    lState = Label(right1, text='Status', font=text_format)
-    lState.grid(row=1, column=2, sticky=W)
-    eState = Entry(right1, textvariable=State, state='readonly', font=text_format, width=8)
-    eState.grid(row=1, column=3, padx=10, pady=10)
-
-    lCost = Label(right1, text="Product Cost (CP)", font=text_format)
-    lCost.grid(row=2, column=0, sticky=W)
-    eCost = Entry(right1, textvariable=Cost, state='readonly', font=text_format)
-    eCost.grid(row=2, column=1, sticky=W, padx=10, pady=10)
-
-    lRate = Label(right1, text="Product Rate (SP)", font=text_format)
-    lRate.grid(row=2, column=2, sticky=W)
-    eRate = Entry(right1, textvariable=Rate, state='readonly', font=text_format, width=8)
-    eRate.grid(row=2, column=3, sticky=W, padx=10, pady=10)
-
-    lStock = Label(right1, text="Product Stock", font=text_format)
-    lStock.grid(row=3, column=0, sticky=W)
-    eStock = Entry(right1, textvariable=Stock, state='readonly', font=text_format)
-    eStock.grid(row=3, column=1, sticky=W, padx=10, pady=10)
-
-    lUnit = Label(right1, text="Product Unit", font=text_format)
-    lUnit.grid(row=3, column=2, sticky=W)
-    eUnit = Entry(right1, textvariable=Unit, state='readonly', font=text_format, width=8)
-    eUnit.grid(row=3, column=3, padx=10, pady=10)
-
-    lGST = Label(right1, text="Product GST(%)", font=text_format)
-    lGST.grid(row=4, column=0, sticky=W)
-    eGST = Entry(right1, textvariable=GST, state='readonly', font=text_format)
-    eGST.grid(row=4, column=1, padx=10, pady=10)
-
-    button1 = Button(right1, text="Back", width=5, **button_format, command=Back)
-    button1.grid(row=5, column=0, columnspan=2, pady=10, padx=10)
-    button2 = Button(right1, text="Home", width=5, **button_format, command=Close)
-    button2.grid(row=5, column=2, columnspan=2, pady=10, padx=10)
-
-def Bill_View(BillID, Date): # View Bills
-    # right.place(x=70, y=50)
-    right.grid(row=0,column=0,padx=75,pady=45)
-    right1 = Frame(right, bd=2, relief=SOLID, padx=20, pady=20)
-    right1.pack()
-    down = Frame(right1, bd=1, relief=SOLID)
-    down.grid(row=1, column=1, sticky=W, pady=5)
-    side = Frame(right1)
-    side.grid(row=0, column=0, rowspan=2)
-    up = Frame(right1)
-    up.grid(row=0, column=1, sticky=W)
-    demodb = mysql.connect(**DB)
-    cursor = demodb.cursor()
-    cursor.execute(f"SELECT billdetail.Serial, product.Name, billdetail.Qty, product.SP, billdetail.Total, "
-                   f"product.GST, product.Unit FROM billdetail,product where billdetail.BillID = '{BillID}' AND "
-                   f"billdetail.ProdID=product.ProdID ORDER BY Serial ASC;")
-    Bitem = cursor.fetchall()
-    cursor.execute(f"SELECT bill.BillID, bill.CustID, Cust.Name, bill.Type, bill.Amt, bill.Disc, bill.Total, "
-                   f"bill.Balance FROM bill,Cust where BillID = '{BillID}' AND bill.CustID=Cust.CustID")
-    billd:tuple = cursor.fetchone()
-    demodb.close()
-    CName = StringVar()
-    Cid = StringVar()
-    Bdisc = StringVar()
-    Btot = StringVar()
-    Bnet = StringVar()
-    Bpay = StringVar()
-    Type = StringVar()
-
-    CName.set(billd[2])
-    Cid.set(billd[1])
-    Bdisc.set(f'{abs(round(billd[4] - billd[6], 2))} ({billd[5]}%)')
-    Type.set(billd[3])
-    Bnet.set(f"₹{billd[6]}")
-    if Type.get() == 'Cash':
-        Btot.set(f"₹{billd[6]}")
-        Bpay.set(f'₹0.0')
-    elif Type.get() == 'Credit':
-        Btot.set(f"₹{abs(round(billd[6] - billd[7]))}")
-        Bpay.set(f'₹{billd[7]}')
-
-    def Close():
-        right1.destroy()
-        Main()
-
-    def Back():
-        right1.destroy()
+    def cc2():
+        left2.destroy()
         View(3)
 
-    def Pri():
-        PDF(BillID)
-        filename = str(f'Bills\\Invoice {BillID}.pdf')
-        printf(filename)
+    b1 = Button(left2, text="Supplier", width=12, bg="brown", fg="white",
+                font=('arial', 14), command=cc)
+    b1.grid(row=1, column=0, padx=10, pady=10)
 
-    scroll = Scrollbar(down)
-    scroll.pack(side=RIGHT, fill=Y)
-    tv = ttk.Treeview(down, columns=('col0', 'col1', 'col2', 'col3', 'col4', 'col5', 'col6'), show='headings',
-                      height=10, yscrollcommand=scroll.set, style="mystyle.Treeview")
-    tv.pack()
-    scroll.config(command=tv.yview)
+    b2 = Button(left2, text="Product", width=12, bg="brown", fg="white",
+                font=('arial', 14), command=cc1)
+    b2.grid(row=2, column=0, padx=10, pady=10)
 
-    tv.heading('col0', text='Sr No.')
-    tv.heading('col1', text='Product Name')
-    tv.heading('col2', text='Qty')
-    tv.heading('col3', text='Rate')
-    tv.heading('col4', text='Price')
-    tv.heading('col5', text='GST')
-    tv.heading('col6', text='Unit')
+    b3 = Button(left2, text="Bills", width=12, bg="brown", fg="white",
+                font=('arial', 14), command=cc2)
+    b3.grid(row=3, column=0, padx=10, pady=10)
 
-    tv.column('col0', anchor=CENTER, width=50)
-    tv.column('col1', anchor=CENTER, width=150)
-    tv.column('col2', anchor=CENTER, width=55)
-    tv.column('col3', anchor=CENTER, width=100)
-    tv.column('col4', anchor=CENTER, width=100)
-    tv.column('col5', anchor=CENTER, width=60)
-    tv.column('col6', anchor=CENTER, width=60)
+    b5 = Button(left2, text="Exit", width=12, bg="brown", fg="white",
+                font=('arial', 14), command=Close)
+    b5.grid(row=4, column=0, padx=10, pady=10)
 
-    for i in Bitem:
-        tv.insert('', 'end', values=i)
-
-    lCName = Label(up, text="Customer Name:", font=text_format)
-    lCName.grid(row=0, column=0, sticky=W)
-    eCName = Entry(up, textvariable=CName, width=18, font=text_format, state='readonly')
-    eCName.grid(row=0, column=1, sticky=W, padx=10, pady=5)
-
-    lDate = Label(up, text=f"Billing Date:", font=text_format)
-    lDate.grid(row=1, column=2, sticky=W)
-    eDate = Label(up, text=f"{Date}", font=text_format)
-    eDate.grid(row=1, column=3, sticky=W, padx=10, pady=5)
-
-    lType = Label(up, text="Payment Type:", font=text_format)
-    lType.grid(row=1, column=0, sticky=W)
-    eType = Label(up, text=Type.get(), font=text_format)
-    eType.grid(row=1, column=1, sticky=W, padx=10, pady=5)
-
-    lPay = Label(up, text="Balance Amt.:", font=text_format)
-    lPay.grid(row=3, column=2, sticky=W)
-    ePay = Label(up, text=Bpay.get(), font=text_format)
-    ePay.grid(row=3, column=3, sticky=W, padx=10, pady=5)
-
-    lBtot = Label(up, text="Amt. Paid:", font=text_format)
-    lBtot.grid(row=2, column=2, sticky=W)
-    eBtot = Label(up, text=Btot.get(), font=text_format)
-    eBtot.grid(row=2, column=3, sticky=W, padx=10, pady=5)
-
-    lBdisc = Label(up, text="Discount Amt.(%):", font=text_format)
-    lBdisc.grid(row=2, column=0, sticky=W)
-    eBdisc = Label(up, text=Bdisc.get(), font=text_format)
-    eBdisc.grid(row=2, column=1, sticky=W, padx=10, pady=5)
-
-    lBnet = Label(up, text="Bill Total:", font=text_format)
-    lBnet.grid(row=3, column=0, sticky=W)
-    eBnet = Label(up, text=Bnet.get(), font=text_format)
-    eBnet.grid(row=3, column=1, sticky=W, padx=10, pady=5)
-
-    lBdis = Label(up, text="Cust. ID:", font=text_format)
-    lBdis.grid(row=0, column=2, sticky=W)
-    eBdis = Label(up, text=Cid.get(), font=text_format)
-    eBdis.grid(row=0, column=3, sticky=W, padx=10, pady=5)
-
-    button1 = Button(side, text="Home", **button_format, width=12, command=Close)
-    button1.grid(row=5, column=0, sticky=E, pady=10, padx=10)
-
-    button2 = Button(side, text="Back", **button_format, width=12, command=Back)
-    button2.grid(row=4, column=0, sticky=E, pady=10, padx=10)
-
-    button3 = Button(side, text='Print Bill', **button_format, width=12, command=Pri)
-    button3.grid(row=3, column=0, sticky=E, pady=10, padx=10)
-
-def Cust_View(CustID): # View Customers
-    right.grid(row=0,column=0,padx=0,pady=0)
-
-    right1 = Frame(right, bd=2, relief=SOLID, padx=20, pady=20)
-    right1.pack()
-    down = Frame(right1, bd=1, relief=SOLID)
-    down.grid(row=1, column=1, sticky=W, pady=5)
-    side = Frame(right1)
-    side.grid(row=0, column=0, rowspan=2)
-    up = Frame(right1)
-    up.grid(row=0, column=1, sticky=W)
-    
-    demodb = mysql.connect(**DB)
-    cursor = demodb.cursor()
-    cursor.execute(f"SELECT Name, CustID, Qty, Total, ROUND((Total-Balance),2), Balance from cust where CustID = '{CustID}'")
-    CustDet:tuple = cursor.fetchone()
-    cursor.execute(f"SELECT BillID, Date, Type, bill.Qty, Disc, bill.Total,bill.Balance,ROUND((bill.Total-bill.Balance),2)"
-                   f" AS Paid FROM bill,Cust where cust.CustID = '{CustID}' AND bill.CustID=Cust.CustID;")
-    Bills:tuple = cursor.fetchall()
-    demodb.close()
-    
-    CName = StringVar()
-    Cid = StringVar()
-    BQty = StringVar()
-    Btot = StringVar()
-    Bpaid = StringVar()
-    Bal = StringVar()
-
-    CName.set(CustDet[0])
-    Cid.set(CustDet[1])
-    BQty.set(CustDet[2])
-    Btot.set(CustDet[3])
-    Bpaid.set(CustDet[4])
-    Bal.set(CustDet[5])
-
-    lCName = Label(up, text="Name:", font=text_format)
-    lCName.grid(row=0, column=0, sticky=W)
-    eCName = Entry(up, textvariable=CName, width=18, font=text_format,state='readonly')
-    eCName.grid(row=0, column=1, sticky=W, padx=10, pady=5)
-
-    lBdis = Label(up, text="CustID:", font=text_format)
-    lBdis.grid(row=0, column=2, sticky=W)
-    eBdis = Label(up, text=Cid.get(), font=text_format)
-    eBdis.grid(row=0, column=3, sticky=W, padx=10, pady=5)
-
-    lType = Label(up, text="No. of Orders:", font=text_format)
-    lType.grid(row=1, column=0, sticky=W)
-    eType = Label(up, text=BQty.get(), font=text_format)
-    eType.grid(row=1, column=1, sticky=W, padx=10, pady=5)
-
-    lBtot = Label(up, text="Total:", font=text_format)
-    lBtot.grid(row=1, column=2, sticky=W)
-    eBtot = Label(up, text=Btot.get(), font=text_format)
-    eBtot.grid(row=1, column=3, sticky=W, padx=10, pady=5)
-
-    lBnet = Label(up, text="Paid:", font=text_format)
-    lBnet.grid(row=3, column=0, sticky=W)
-    eBnet = Label(up, text=Bpaid.get(), font=text_format)
-    eBnet.grid(row=3, column=1, sticky=W, padx=10, pady=5)
-    
-    lPay = Label(up, text="Balance:", font=text_format)
-    lPay.grid(row=3, column=2, sticky=W)
-    ePay = Label(up, text=Bal.get(), font=text_format)
-    ePay.grid(row=3, column=3, sticky=W, padx=10, pady=5)
-
-    def Close():
-        right1.destroy()
-        Main()
-
-    def Back():
-        right1.destroy()
-        View(4)
-
-    scroll = Scrollbar(down)
-    scroll.pack(side=RIGHT, fill=Y)
-    tv = ttk.Treeview(down, columns=('col0', 'col1', 'col2', 'col3', 'col4', 'col5', 'col6', 'col7'), show='headings',
-                      height=10, yscrollcommand=scroll.set, style="mystyle.Treeview")
-    tv.pack()
-    scroll.config(command=tv.yview)
-
-    tv.heading('col0', text='Bill No.')
-    tv.heading('col1', text='Date')
-    tv.heading('col2', text='Type')
-    tv.heading('col3', text='Qty')
-    tv.heading('col4', text='Dis (%)')
-    tv.heading('col5', text='Total')
-    tv.heading('col6', text='Balance')
-    tv.heading('col7', text='Paid')
-
-    tv.column('col0', anchor=CENTER, width=90)
-    tv.column('col1', anchor=CENTER, width=75)
-    tv.column('col2', anchor=CENTER, width=55)
-    tv.column('col3', anchor=CENTER, width=40)
-    tv.column('col4', anchor=CENTER, width=55)
-    tv.column('col5', anchor=CENTER, width=100)
-    tv.column('col6', anchor=CENTER, width=100)
-    tv.column('col7', anchor=CENTER, width=100)
-
-    for i in Bills:
-        tup = list(i)
-        zz = str(i[1]).split()[0]
-        tup[1] = zz.split('-')[2] + '/' + zz.split('-')[1] + '/' + zz.split('-')[0]
-        tv.insert('', 'end', values=tup)
-
-    button1 = Button(side, text="Home", **button_format, width=12, command=Close)
-    button1.grid(row=5, column=0, sticky=E, pady=10, padx=10)
-
-    button2 = Button(side, text="Back", **button_format, width=12, command=Back)
-    button2.grid(row=4, column=0, sticky=E, pady=10, padx=10)
+    b3 = Label(left2, text="View", font=("arial-bold", 25))
+    b3.grid(row=0, column=0)
 
 
-""" Program Start """
+def Main():
+    left0 = Frame(left, bd=2, relief=SOLID, padx=50, pady=50)
+    left0.pack()
+    left.place(x=350, y=100)
+    l = Label(window, text="A. Somasundara Nadar & Co.", bg='Yellow', font=("arial-bold", 25))
+    l.place(x=300, y=25)
+
+    def aa():
+        left0.destroy()
+        Main_Add()
+        l.destroy()
+
+    def bb():
+        left0.destroy()
+        Main_Mod()
+        l.destroy()
+
+    def cc():
+        left0.destroy()
+        Main_Bill()
+        l.destroy()
+
+    def dd():
+        left0.destroy()
+        Main_View()
+        l.destroy()
+
+    b0 = Button(left0, text="Add", width=12, bg="brown", fg="white",
+                font=('arial', 14), command=aa)
+    b0.grid(row=0, column=0, padx=10, pady=10)
+    b1 = Button(left0, text="Modify", width=12, bg="brown", fg="white",
+                font=('arial', 14), command=bb)
+    b1.grid(row=1, column=0, padx=10, pady=10)
+    b3 = Button(left0, text="View", width=12, bg="brown", fg="white",
+                font=('arial', 14), command=dd)
+    b3.grid(row=2, column=0, padx=10, pady=5)
+    b2 = Button(left0, text="Billing", width=12, bg="brown", fg="white",
+                font=('arial', 14), command=cc)
+    b2.grid(row=3, column=0, padx=10, pady=10)
+    b4 = Button(left0, text="Exit", width=12, bg="brown", fg="white",
+                font=('arial', 14), command=exit_prog)
+    b4.grid(row=4, column=0, padx=10, pady=5)
+
+
 window = Tk()
-
-""" Menu bar """
-menu = Menu(window,background=bgcol)
-menu.add_command(label="Bulk Entry", command=sql_csv)
-menu.add_command(label="Repair", command=Ins.install_Old)
-menu.add_command(label="Search", command=Search)
-menu.add_separator()
-menu.add_command(label="Help", command=Helpwind)
-menu.add_command(label="Exit", command=exit_prog)
-
-""" Window Attributies """
-window.config(menu=menu)
-window.iconbitmap(r'modules/1.ico')
-window.config(bg=bgcol)
 window.title('Bill System')
 window.geometry("960x540")
-window.resizable(False, False)
-window.protocol("WM_DELETE_WINDOW", exit_prog)
+window.iconbitmap(r'modules/1.ico')
 window.focus_force()
+window.resizable(False, False)
+window.config(bg='yellow')
 
-""" Treeview Style """
+menu = Menu(window)
+window.config(menu=menu)
+sm0 = Menu(menu, tearoff=0)
+sm0.add_command(label="Repair", command=Ins.install_Old)
+sm0.add_command(label="Bulk Entry", command=sql_csv_imp)
+sm0.add_command(label="Export Database", command=sql_csv_exp)
+sm0.add_separator()
+sm0.add_command(label="Help", command=Helpwind)
+sm0.add_command(label="Exit", command=exit_prog)
+menu.add_cascade(label="Options", menu=sm0)
+
+left = Frame(window, bg='yellow')
+left.place(x=50, y=80)
+right = Frame(window, bg='yellow')
+right.place(x=5000, y=0)
+window.protocol("WM_DELETE_WINDOW", exit_prog)
 style = ttk.Style()
 style.configure("mystyle.Treeview.Heading", font=("arial", 10, 'bold'))
 style.configure("mystyle.Treeview", font=("arial", 10))
+Main()
 
 try:
     if pas == '':
         window.destroy()
         raise SystemExit
     else:
-        demodb = mysql.connect(**DB)
+        demodb = mysql.connect(host="localhost", user=us, passwd=pas, database="projectold")
         cursor = demodb.cursor()
         cursor.execute('SELECT * FROM supplier;')
         demodb.close()
 except mysql.errors.ProgrammingError:
     sql_data_create()
 
-right = Frame(window, bg=bgcol)
-right.grid(column=0,row=1)
-
-Update_lst(4) # First intialize
-Main()  # Start Home Screen
+alist()
 
 window.mainloop()
