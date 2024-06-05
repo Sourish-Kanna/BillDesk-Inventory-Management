@@ -22,7 +22,7 @@ button_format:dict = {"bg":"brown", "fg":"white", "font":text_format}
 DB:dict = {"user": us, "passwd": pas, "database": "project", "host": "localhost"}
 gstlst:tuple = ('Select GST Rate', '00.00 %', '05.00 %', '12.00 %', '18.00 %', '28.00 %')
 
-""" Working Lists """
+""" Working Lists/Dicts """
 supplst: list[str] = [] # To select supplier in product Add
 prodlst: list[str] = [] # To show product in Bill
 custlst: list[str] = [] # To show customer in Bill
@@ -203,14 +203,12 @@ def Bill(): # Billing mode
         value = ePName.get()
         nonlocal Pname
         if value == '' or value == 'Select Product':
-            # Pname = sorted(Pname[1:])
             data = Pname
         else:
             data = []
             for item in Pname:
                 if value.lower() in item.lower():
                     data.append(item)
-            # data = sorted(data[1:])
         ePName.config(values=data)
         ePName.after(750,Proddrop)
         
@@ -251,7 +249,7 @@ def Bill(): # Billing mode
             ePay.config(state="normal")
 
     """ Side Panel """
-    def Add(): # Add
+    def Add(): # Add Element
         # Preprocessing Part
         if ePName.get() == 'Select Product':
             messagebox.showerror("Select Product", "Please Select Product")
@@ -284,7 +282,7 @@ def Bill(): # Billing mode
         price = round((det[2]*qty)+((det[2]*qty)*(float(det[0]))/100),2)
         tup = (name,qty,det[0],det[1],det[2],price)
         
-        # Ending Part
+        # Postprocessing Part
         b_items.append({pid:tup})
         tv.insert('', 'end', values=tup)  # For Display Table
         tv.yview_moveto(1)
@@ -320,7 +318,7 @@ def Bill(): # Billing mode
         ePName.current(0)
         tv.delete(x)
 
-    def Modify():
+    def Modify(): # Edit Qty
         if tv.focus() == '':
             return
 
@@ -355,6 +353,7 @@ def Bill(): # Billing mode
             tv.item(sel, text="", values=sel_tup)
             Total.set((Total.get()-old_price)+new_price)
             eBnet.configure(text=f"₹{Total.get()}")
+            button1.config(text='Edit Qty')
             eQty.bind('<Return>', Next_Prod1)
             ePName.focus()
             return
@@ -362,6 +361,7 @@ def Bill(): # Billing mode
         sel = select
         sel_tup = tv.item(select)['values']  # (Name,qty,gst,unit,rate,price)
         Qty.set(sel_tup[1])
+        button1.config(text='Save Edit')
         eQty.focus()
         eQty.bind('<Return>', Next_Modify)
 
@@ -467,7 +467,7 @@ def Bill(): # Billing mode
     button0 = Button(side, text="Add", **button_format, width=12, command=Add)
     button0.grid(row=0, column=0, sticky=W, pady=10, padx=10)
 
-    button1 = Button(side, text="Edit", **button_format, width=12 ,command=Modify)
+    button1 = Button(side, text="Edit Qty", **button_format, width=12 ,command=Modify)
     button1.grid(row=1, column=0, sticky=W, pady=10, padx=10)
 
     button2 = Button(side, text="Delete", **button_format, width=12, command=Delete)
