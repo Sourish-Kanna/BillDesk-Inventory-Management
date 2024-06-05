@@ -7,7 +7,7 @@ from modules.SQL_Check import Check_Database
 from time import strftime as stime
 import mysql.connector as mysql
 from tkinter import messagebox
-from datetime import datetime
+from modules.SQL_IDGenrate import cust_gen
 from modules.PDF import Pdf
 from tkinter import ttk
 from tkinter import *
@@ -19,7 +19,7 @@ bgcol:str = "#add8e6"
 text_format:tuple = ("arial", 14)
 unitlst:tuple = ('Select Unit', 'Kgs', 'Nos')
 button_format:dict = {"bg":"brown", "fg":"white", "font":text_format}
-DB:dict = {"user": us, "passwd": pas, "database": "project", "host": "localhost"}
+DB:dict[str,str] = {"user": us, "passwd": pas, "database": "project", "host": "localhost"}
 gstlst:tuple = ('Select GST Rate', '00.00 %', '05.00 %', '12.00 %', '18.00 %', '28.00 %')
 
 """ Working Lists/Dicts """
@@ -142,7 +142,6 @@ def Bill(): # Billing mode
     def Proddrop(): # Prodname DropBox
         ePName.event_generate ('<Down>', when='head')
     
-    
     """ CallBack Function """
     def Next_Prod(event):
         ePName.focus()
@@ -151,20 +150,41 @@ def Bill(): # Billing mode
         eQty.focus()
         
     def Next_Prod1(event):
-        Add()
         ePName.focus()
+        Add()
 
     def Next_dis(event):
-        eBdisc.focus()
+        eBdis_r.focus()
 
-    def Next_Bill(event):
+    def Adv_pay(event):
+        val = float(Adv.get())
+        btotal = Total.get()
+
+        if not val:
+            val='0.0'
+
+        if Total.get()<float(val):
+            messagebox.showerror("Negetive Ruprees", "Please Enter advance less than total !!!!")
+            Adv.set('')
+            return
+
+        if Total.get()!=0.0:
+            btotal = round(btotal-float(val),2)
+        
+        Bal.set(btotal)
+        eBtot.configure(text=f"₹{Bal.get()}")
         Check()
 
     def Next_Modify(event):
         Modify()
 
-    def Or_dis(event):
-        eBdis.focus()
+    def Or_Dis_p(event):
+        Dis_ru.set('')
+        eBdis_p.focus()
+
+    def Or_Dis_r(event):
+        Dis_per.set('')
+        eBdis_r.focus()
     
     def Dis_perc(event):
         val = Dis_per.get()
@@ -179,8 +199,8 @@ def Bill(): # Billing mode
         
         if Total.get()!=0.0:
             Discount(1,val)
-        
-        Check()
+        Credit()
+        eType1.focus()
 
     def Dis_rup(event):
         val = Dis_ru.get()
@@ -195,8 +215,9 @@ def Bill(): # Billing mode
 
         if Total.get()!=0.0:
             Discount(2,val)
-
-        Check()
+        
+        Credit()
+        eType1.focus()
 
     """ Calculate """
     def ProdN(event): # Prodname search
@@ -238,15 +259,19 @@ def Bill(): # Billing mode
             Dis_per.set(dis_per)
         
         Total.set(btotal)
-        print(btotal)
         eBnet.configure(text=f"₹{Total.get()}")
 
     def Credit(): # Credit
         if Typ.get() == "Full" :
+            eType1.config(bg='light gray')
+            eType2.config(bg='SystemButtonFace')
             Adv.set("")
             ePay.config(state="disabled")
         else:
+            eType1.config(bg='SystemButtonFace')
+            eType2.config(bg='light gray')
             ePay.config(state="normal")
+            ePay.focus()
 
     """ Side Panel """
     def Add(): # Add Element
@@ -270,6 +295,7 @@ def Bill(): # Billing mode
         if not stk[0]:
             messagebox.showerror("Insuffient Stock", f"You dont have enough stock of {name}.\n Stock Availble = {stk[1]}")
             eQty.focus()
+            Qty.set('')
             return
         stk = stk[1]
         
@@ -325,49 +351,68 @@ def Bill(): # Billing mode
         nonlocal sel,sel_tup
         select = tv.focus()
 
-        if sel==select: # Modified
-            sp = float(sel_tup[4])
-            gst = float(sel_tup[2])
-            new = int(Qty.get())
-            old_price = float(sel_tup[5])
-            pid = ""
-
-            for ppid, pname in prodname.items():
-                if pname == sel_tup[0]:
-                    pid = ppid
-                    break
-
-            stk = Check_Database(1, (pid, new), us, pas)
-            if not stk[0]:
-                messagebox.showerror("Insufficient Stock", f"Not enough stock of {new}.\nAvailable stock = {stk[1]}")
-                return
-            
-            sel_tup[5] = float(sel_tup[5])
-            sel_tup[4] = float(sel_tup[4])
-            index = b_items.index({pid:tuple(sel_tup)})
-            sel_tup[1] = new
-            new_price = round((sp * new) + ((sp * new) * (gst) / 100), 2)
-            sel_tup[5] = new_price
-
-            b_items[index] = {pid:tuple(sel_tup)}
-            tv.item(sel, text="", values=sel_tup)
-            Total.set((Total.get()-old_price)+new_price)
-            eBnet.configure(text=f"₹{Total.get()}")
-            button1.config(text='Edit Qty')
-            eQty.bind('<Return>', Next_Prod1)
-            ePName.focus()
+        if sel!=select: # Modified
+            sel = select
+            sel_tup = tv.item(select)['values']  # (Name,qty,gst,unit,rate,price)
+            Qty.set(sel_tup[1])
+            button1.config(text='Save Edit')
+            eQty.focus()
+            eQty.bind('<Return>', Next_Modify)
             return
         
-        sel = select
-        sel_tup = tv.item(select)['values']  # (Name,qty,gst,unit,rate,price)
-        Qty.set(sel_tup[1])
-        button1.config(text='Save Edit')
-        eQty.focus()
-        eQty.bind('<Return>', Next_Modify)
+        sp = float(sel_tup[4])
+        gst = float(sel_tup[2])
+        new = int(Qty.get())
+        old_price = float(sel_tup[5])
+        pid = ""
 
-    def Check(): # Show/Check Before Billing
+        for ppid, pname in prodname.items():
+            if pname == sel_tup[0]:
+                pid = ppid
+                break
+
+        stk = Check_Database(1, (pid, new), us, pas)
+        if not stk[0]:
+            messagebox.showerror("Insufficient Stock", f"Not enough stock of {new}.\nAvailable stock = {stk[1]}")
+            return
+        
+        sel_tup[5] = float(sel_tup[5])
+        sel_tup[4] = float(sel_tup[4])
+        index = b_items.index({pid:tuple(sel_tup)})
+        sel_tup[1] = new
+        new_price = round((sp * new) + ((sp * new) * (gst) / 100), 2)
+        sel_tup[5] = new_price
+
+        b_items[index] = {pid:tuple(sel_tup)}
+        tv.item(sel, text="", values=sel_tup)
+        Total.set((Total.get()-old_price)+new_price)
+        eBnet.configure(text=f"₹{Total.get()}")
+        button1.config(text='Edit Qty')
+        eQty.bind('<Return>', Next_Prod1)
+        ePName.focus()
+        return
+
+    def Check(): # Check Before Billing
         #sql_update_other 1 put stk directly from treeview
-        pass
+        cc = messagebox.askquestion("Procced to Bill","Procced to Bill?")
+        print(cc)
+        if cc == 'no':
+            return
+
+        # Preprocessing part
+        CustName = eCName.get()
+        if CustName == '' or CustName == 'Select/Type Name':
+            messagebox.showerror("Unknown Customer", "Please Enter Customer Name")
+            eCName.focus()
+            return
+        if CustName not in custlst:
+            cid = cust_gen(CustName, us, pas)
+            count = 0
+        else:
+            cid = Check_Database(2,(CustName,),us,pas)
+        
+        stime('%I:%M:%S %p' '%Y-%m-%d')
+        BillNos = f'{stime("%y""%m""%d")}{cid}-{count}'
 
     lCName = Label(up, text="Customer Name:", font=text_format)
     lCName.grid(row=0, column=0, sticky=W)
@@ -400,22 +445,24 @@ def Bill(): # Billing mode
     eQty = Entry(up, textvariable=Qty, width=7, font=text_format)
     eQty.grid(row=1, column=3, sticky=W, padx=10, pady=5)
     eQty.bind('<Return>', Next_Prod1)
+    eQty.bind('<Shift_L>', Next_dis)
+    eQty.bind('<Shift_R>', Next_dis)
 
-    lBdisc = Label(up, text="Discount(₹):", font=text_format)
-    lBdisc.grid(row=2, column=0, sticky=W)
-    eBdisc = Entry(up, textvariable=Dis_ru, width=7, font=text_format)
-    eBdisc.grid(row=2, column=1, sticky=W, padx=10, pady=5)
-    eBdisc.bind('<Return>', Dis_rup)
-    eBdisc.bind('<Shift_L>', Or_dis)
-    eBdisc.bind('<Shift_R>', Or_dis)
+    lBdis_r = Label(up, text="Discount(₹):", font=text_format)
+    lBdis_r.grid(row=2, column=0, sticky=W)
+    eBdis_r = Entry(up, textvariable=Dis_ru, width=7, font=text_format)
+    eBdis_r.grid(row=2, column=1, sticky=W, padx=10, pady=5)
+    eBdis_r.bind('<Return>', Dis_rup)
+    eBdis_r.bind('<Shift_L>', Or_Dis_p)
+    eBdis_r.bind('<Shift_R>', Or_Dis_p)
 
-    lBdis = Label(up, text="Discount(%):", font=text_format)
-    lBdis.grid(row=2, column=2, sticky=W)
-    eBdis = Entry(up, textvariable=Dis_per, width=7, font=text_format)
-    eBdis.grid(row=2, column=3, sticky=W, padx=10, pady=5)
-    eBdis.bind('<Return>', Dis_perc)
-    eBdis.bind('<Shift_L>', Next_dis)
-    eBdis.bind('<Shift_R>', Next_dis)
+    lBdis_p = Label(up, text="Discount(%):", font=text_format)
+    lBdis_p.grid(row=2, column=2, sticky=W)
+    eBdis_p = Entry(up, textvariable=Dis_per, width=7, font=text_format)
+    eBdis_p.grid(row=2, column=3, sticky=W, padx=10, pady=5)
+    eBdis_p.bind('<Return>', Dis_perc)
+    eBdis_p.bind('<Shift_L>', Or_Dis_r)
+    eBdis_p.bind('<Shift_R>', Or_Dis_r)
 
     lType = Label(up, text="Payment Type:", font=text_format)
     lType.grid(row=3, column=0, sticky=W)
@@ -429,7 +476,7 @@ def Bill(): # Billing mode
     ePay = Entry(up, textvariable=Adv, width=7, font=text_format)
     ePay.grid(row=3, column=3, sticky=W, padx=10, pady=5)
     ePay.config(state="disabled")
-    ePay.bind('<Return>', Next_Bill)
+    ePay.bind('<Return>', Adv_pay)
 
     lBnet = Label(up, text="Bill Total:", font=text_format)
     lBnet.grid(row=4, column=0, sticky=W)

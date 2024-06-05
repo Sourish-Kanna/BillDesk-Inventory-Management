@@ -9,7 +9,9 @@ def Check_Database(tab_name:int, tab_items:tuple, us:str, pas:str):
     Check stocks
 
     Tuple Order :-
-    1] Check stock before Billing --> ProdID,ProdStock"""
+        1] Check stock before Billing --> ProdID,ProdStock\n
+        2] Check Cudtomer name and return cid --> CID
+    """
 
     if tab_name == 1:  # Update stock after Billing
         pid, stk = tab_items
@@ -23,6 +25,16 @@ def Check_Database(tab_name:int, tab_items:tuple, us:str, pas:str):
             return True,qty-stk
         else:
             return False,qty
+    elif tab_name == 2:
+        cname,date = tab_items
+        conn = mysql.connector.connect(host=DBhost, user=us, passwd=pas, database=DBname)
+        cursor = conn.cursor()
+        sql = f"SELECT CustID FROM Cust WHERE Name='{cname}'"
+        cursor.execute(sql)
+        sql = f"select Name, count(*) from cust join bill on cust.CustID = bill.CustID where date like '2024-01-28%' group by name;"
+        cid = cursor.fetchone()
+        conn.close()
+        return cid[0],count
  
 
 if __name__ == '__main__':
@@ -33,5 +45,5 @@ if __name__ == '__main__':
         from time import sleep
         sleep(2.5)
         raise SystemExit
-    print(Check_Database(1,("S01P01",100),us,pas))
+    print(Check_Database(2,("Sourish",),us,pas))
     
