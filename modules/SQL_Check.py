@@ -5,15 +5,15 @@ DBhost:str = "localhost"
 
 def Check_Database(tab_name:int, tab_items:tuple, us:str, pas:str):
     """Check MySQL Columns
-
-    Check stocks
+    
+    Check Various things in database
 
     Tuple Order :-
-        1] Check stock before Billing --> ProdID,ProdStock\n
-        2] Check Cudtomer name and return cid --> CID
+        1] Check stock before Billing --> ProdID,ProdStock \n
+        2] Check Customer name --> CID,count
     """
 
-    if tab_name == 1:  # Update stock after Billing
+    if tab_name == 1:  # Check stock before Billing
         pid, stk = tab_items
         conn = mysql.connector.connect(host=DBhost, user=us, passwd=pas, database=DBname)
         cursor = conn.cursor()
@@ -21,20 +21,21 @@ def Check_Database(tab_name:int, tab_items:tuple, us:str, pas:str):
         cursor.execute(sql)
         qty = cursor.fetchone()[0]
         conn.close()
-        if qty-stk>0:
+        if qty-stk>=0:
             return True,qty-stk
         else:
             return False,qty
-    elif tab_name == 2:
+        
+    elif tab_name == 2: # Check Customer name
         cname,date = tab_items
         conn = mysql.connector.connect(host=DBhost, user=us, passwd=pas, database=DBname)
         cursor = conn.cursor()
-        sql = f"SELECT CustID FROM Cust WHERE Name='{cname}'"
+        sql = f"SELECT cust.CustID, count(*) FROM cust JOIN bill ON cust.CustID = bill.CustID WHERE date LIKE '{date}%' \
+            AND Name='{cname}' GROUP BY cust.CustID;"
         cursor.execute(sql)
-        sql = f"select Name, count(*) from cust join bill on cust.CustID = bill.CustID where date like '2024-01-28%' group by name;"
-        cid = cursor.fetchone()
+        cid,count = cursor.fetchone()
         conn.close()
-        return cid[0],count
+        return cid,count
  
 
 if __name__ == '__main__':
@@ -45,5 +46,5 @@ if __name__ == '__main__':
         from time import sleep
         sleep(2.5)
         raise SystemExit
-    print(Check_Database(2,("Sourish",),us,pas))
+    print(Check_Database(2,("Sourish","2024-06-05"),us,pas))
     

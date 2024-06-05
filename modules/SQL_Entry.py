@@ -3,14 +3,17 @@ import mysql.connector
 DBname:str = "project"
 
 def Create(tab_name, tab_items, us, pas):
-    """Create MySQL Tables
+    """Create MySQL Rows
 
     Tuple Order :-
-    1] supplier   --> (SuppID, SuppName, SuppAdd, SuppPhone, SuppEmail)
-    2] product    --> (SuppID, ProdID, ProdName, ProdCost, ProdRate, ProdGST, ProdUnit, ProdStock )
-    3] bill       --> (BillNos, CustID, Type, BillDate, Billser, BillAmt, BillDisc, BillNet,Balance)
-    4] billdetail --> (BillNos, ProdID, ProdQty, Prodtot, Billser)
-    5] cust       --> (CustID, CustName, Qty, Balance, Total)"""
+    
+        1] supplier   --> (SuppID, SuppName, SuppAdd, SuppPhone, SuppEmail) \n
+        2] product    --> (SuppID, ProdID, ProdName, ProdCost, ProdRate, ProdGST, ProdUnit, ProdStock ) \n
+        3] bill       --> (BillNos, CustID, Type, BillDate, Billser, BillAmt, BillDisc_per, BillNet,Balance) \n
+        4] billdetail --> (BillNos, ProdID, ProdQty, Prodtot, Billser) \n
+        5] cust       --> (CustID, CustName, Qty, Balance, Total)
+    """
+
     if tab_name == 0: # All Print
         conn = mysql.connector.connect(host="localhost", user=us, passwd=pas, database=DBname)
         cursor = conn.cursor()
@@ -49,11 +52,11 @@ def Create(tab_name, tab_items, us, pas):
         conn.close()
 
     elif tab_name == 3:  # bill
-        BillNos, CustID, Type, BillDate, Billser, BillAmt, BillDisc, BillNet, Balance = tab_items
+        BillNos, CustID, Type, BillDate, Billser, BillAmt, Dis_per, BillNet, Balance = tab_items
         conn = mysql.connector.connect(host="localhost", user=us, passwd=pas, database=DBname)
         cursor = conn.cursor()
-        sql = f"INSERT INTO bill(BillID,CustID,Type,Date,Qty,Amt,Disc,Total,Balance) " \
-              f"VALUES ('{BillNos}','{CustID}','{Type}','{BillDate}',{Billser}, {BillAmt},{BillDisc},{BillNet}, {Balance});"
+        sql = f"INSERT INTO bill(BillID,CustID,Type,Date,Qty,Amt,Dis_per,Total,Balance) " \
+              f"VALUES ('{BillNos}','{CustID}','{Type}','{BillDate}',{Billser}, {BillAmt},{Dis_per},{BillNet}, {Balance});"
         cursor.execute(sql)
         conn.commit()
         conn.close()
@@ -91,8 +94,9 @@ def Create(tab_name, tab_items, us, pas):
 
 
 if __name__ == '__main__':
-    from SQL_TPass import Pass
-    pas, us = Pass()
+    # from SQL_TPass import Pass
+    # pas, us = Pass()
+    pas, us = 'Ramsour1_2003', 'root'
     if pas == None:
         from time import sleep
         sleep(2.5)

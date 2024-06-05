@@ -22,7 +22,7 @@ def SQLTAB(us, pas):
     cursor.execute(sql)
     sql = 'CREATE TABLE bill(BillID CHAR (12) NOT NULL PRIMARY KEY, CustID CHAR(3) NOT NULL ,FOREIGN KEY (CustID) ' \
           'REFERENCES cust(CustID), Type ENUM(\'Cash\', \'Credit\') NOT NULL, Date DATETIME NOT NULL, ' \
-          'Qty INT NOT NULL, Amt FLOAT NOT NULL, Disc FLOAT NOT NULL DEFAULT \'0.00\', Total FLOAT NOT NULL, ' \
+          'Qty INT NOT NULL, Amt FLOAT NOT NULL, Dis_per FLOAT NOT NULL DEFAULT \'0.00\', Total FLOAT NOT NULL, ' \
           'Balance FLOAT NOT NULL); '
     cursor.execute(sql)
     sql = 'CREATE TABLE billdetail(BillID CHAR (12) NOT NULL, FOREIGN KEY (BillID) REFERENCES bill(BillID), ' \

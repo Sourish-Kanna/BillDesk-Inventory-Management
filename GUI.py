@@ -1,7 +1,5 @@
 # GUI Source Code
 
-print("# Update & Change SQL_Check, SQL_Entry & SQL_Update after Bill Module")
-
 """ Import Section """
 import modules.Install as Ins
 Ins.install()
@@ -9,8 +7,9 @@ try:
     from modules.SQL_IDGenrate import supp_gen, prod_gen, cust_gen
 except:
     raise SystemExit
-from modules.SQL_Update import Update_All, Update_other
+from modules.SQL_Update import Update_row, Update_column
 from modules.SQL_Entry import Create
+from modules.SQL_Check import Check_Database
 from time import strftime as stime
 import mysql.connector as mysql
 from tkinter import messagebox
@@ -28,15 +27,16 @@ bgcol:str = "#add8e6"
 text_format:tuple = ("arial", 14)
 unitlst:tuple = ('Select Unit', 'Kgs', 'Nos')
 button_format:dict = {"bg":"brown", "fg":"white", "font":text_format}
-DB:dict = {"user": us, "passwd": pas, "database": "project", "host": "localhost"}
+DB:dict[str,str] = {"user": us, "passwd": pas, "database": "project", "host": "localhost"}
 gstlst:tuple = ('Select GST Rate', '00.00 %', '05.00 %', '12.00 %', '18.00 %', '28.00 %')
 
-""" Working Lists """
-supplst: list[str] = [] # To select supplier in product add
-prodlst: list[str] = [] # To show Product in Bills
+""" Working Lists/Dicts """
+supplst: list[str] = [] # To select supplier in product Add
+prodlst: list[str] = [] # To show product in Bill
+custlst: list[str] = [] # To show customer in Bill
 prodname:dict = {} # {PID:Name} To Display in modify screen
 suppname:dict = {} # {SID:Name} To Display in modify screen
-prodqty:dict = {} # {PID:Qty}  To Check Avaible Stock
+prodqty:dict = {}  # {PID:Qty}  To Check Avaible Stock
 
 
 """ Other Functions """
@@ -106,11 +106,12 @@ def Update_lst(what): # Genrate Alpha List
     demodb = mysql.connect(**DB)
     cursor = demodb.cursor()
     
-    global supplst, prodlst, prodname, suppname, prodqty
+    global supplst, prodlst, prodname, suppname, prodqty, custlst
     prodname = {}
     prodqty = {}
     prodlst = ['Select Product']
     supplst = ['Select Supplier']
+    custlst = ['Select/Type Name']
     
     if what==1: # supplier
         cursor.execute(f"SELECT SuppID,SuppName FROM supplier where Hide='N'")
@@ -134,6 +135,11 @@ def Update_lst(what): # Genrate Alpha List
         Qty = list(cursor.fetchall())
         for i in Qty:
             prodqty[i[0]] = i[1]
+    elif what==6: # Customer Name
+        cursor.execute(f"select Name from cust")
+        cust = list(cursor.fetchall())
+        for i in cust:
+            custlst.append(i[0])
     elif what==4: # All
         cursor.execute(f"SELECT SuppID,SuppName FROM supplier where Hide='N'")
         supplier = list(cursor.fetchall())
@@ -153,6 +159,10 @@ def Update_lst(what): # Genrate Alpha List
         Qty = list(cursor.fetchall())
         for i in Qty:
             prodqty[i[0]] = i[1]
+        cursor.execute(f"select Name from cust")
+        cust = list(cursor.fetchall())
+        for i in cust:
+            custlst.append(i[0])
         
     demodb.close()
 
@@ -192,420 +202,456 @@ def Bill(): # Billing mode
     side.grid(row=0, column=0, rowspan=2)
     up = Frame(right1)
     up.grid(row=0, column=1, sticky=W)
-    demodb = mysql.connect(**DB)
-    cursor = demodb.cursor()
-    time = datetime.now()
-    Date = str(time.strftime("%y""%m""%d"))
-    cursor.execute(f"SELECT COUNT(BillID) FROM bill WHERE BillID LIKE '%{Date}%';")
-    D:int = cursor.fetchone()[0] + 1
-    demodb.close()
-    a = [1, '0', (), '', []]  # [Bill Serial No., Selected Display No., Selected Tuple List, Bill ID, deleted items]
-    CName = StringVar()  # Customer Name
-    PQty = StringVar()  # Product Qty
-    Bdic = StringVar()  # Discount %
-    Bdisc = StringVar()  # Discount ₹
-    Btot = DoubleVar()  # Bill Before Dicount
-    Bnet = DoubleVar()  # Bill After Dicount
-    Bpay = StringVar()  # Bill Pay in Advance
-    rad = StringVar()  # Bill Payment Type
-    rad.set('Cash')
-    lst = list(prodlst)  # Master Product List
-    lst1 = []  # For Bill Detail Table in Database
-    lst2 = []  # Prod Stock For Updation
-    data = list(lst)  # ComboBox List
 
-    def Close():
+    sel = None
+    sel_tup = None
+    Bal = DoubleVar()  # Bill Ballance
+    Qty = StringVar()  # Product Qty
+    Typ = StringVar()  # Bill Payment Type
+    Adv = StringVar()  # Bill Pay in Advance
+    Total = DoubleVar()  # Bill After Dicount
+    Dis_ru = StringVar()  # Discount ₹
+    data = list(prodlst)  # Product Name Working
+    b_items = [] # Bill items in dict form -> {ProdID:(ProdName,Qty,Gst,Unit,Rate,Price)}
+    Dis_per = StringVar()  # Discount %
+    Pname = list(prodlst) # Product Name main
+    Typ.set('Full')
+
+    """ Other Interface """
+    def Clear(): # Clear Interface
+        right1.destroy()
+        Bill()
+
+    def Close(): # Close Interface
         right1.destroy()
         Main()
 
-    def clock():
+    def clock(): # Clock Function
         stri = f"Time:\t{stime('%I:%M:%S %p')}"
         label.config(text=stri)
         label.after(1000, clock)
 
-    def ProdN(event):
-        value = event.widget.get()
+    def Custdrop(): # Custname DropBox
+        eCName.event_generate ('<Down>', when='head')
+
+    def Proddrop(): # Prodname DropBox
+        ePName.event_generate ('<Down>', when='head')
+    
+    """ CallBack Function """
+    def Next_Prod(event):
+        ePName.focus()
+
+    def Next_Qty(event):
+        eQty.focus()
+        
+    def Next_Prod1(event):
+        ePName.focus()
+        Add()
+
+    def Next_dis(event):
+        eBdis_r.focus()
+
+    def Adv_pay(event):
+        val = float(Adv.get())
+        btotal = Total.get()
+
+        if not val:
+            val='0.0'
+
+        if Total.get()<float(val):
+            messagebox.showerror("Negetive Ruprees", "Please Enter advance less than total !!!!")
+            Adv.set('')
+            return
+
+        if Total.get()!=0.0:
+            btotal = round(btotal-float(val),2)
+        
+        Bal.set(btotal)
+        eBtot.configure(text=f"₹{Bal.get()}")
+        Check()
+
+    def Next_Modify(event):
+        Modify()
+
+    def Or_Dis_p(event):
+        Dis_ru.set('')
+        eBdis_p.focus()
+
+    def Or_Dis_r(event):
+        Dis_per.set('')
+        eBdis_r.focus()
+    
+    def Dis_perc(event):
+        val = Dis_per.get()
+
+        if not val:
+            val='0.0'
+
+        if float(val)>100.0:
+            messagebox.showerror("Negetive Ruprees", "Please Enter discount(%) between 0 to 100 !!!!")
+            Dis_per.set('')
+            return
+        
+        if Total.get()!=0.0:
+            Discount(1,val)
+        Credit()
+        eType1.focus()
+
+    def Dis_rup(event):
+        val = Dis_ru.get()
+
+        if not val:
+            val='0.0'
+
+        if Total.get()<float(val):
+            messagebox.showerror("Negetive Ruprees", "Please Enter discount(₹) less than total !!!!")
+            Dis_ru.set('')
+            return
+
+        if Total.get()!=0.0:
+            Discount(2,val)
+        
+        Credit()
+        eType1.focus()
+
+    """ Calculate """
+    def ProdN(event): # Prodname search
+        value = ePName.get()
+        nonlocal Pname
         if value == '' or value == 'Select Product':
-            data = lst
+            data = Pname
         else:
             data = []
-            for item in lst:
+            for item in Pname:
                 if value.lower() in item.lower():
                     data.append(item)
         ePName.config(values=data)
-
-    def discount(event):
-        discount0()
-
-    def discount1(event):
-        if Bdic.get() == '':
-            a = 0.0
-        elif float(Bdic.get()) > 100.0:
-            messagebox.showerror("Negetive Ruprees", "Please Enter discount (%) between 0 to 100")
-            Bdic.set('0.0')
-            return
+        ePName.after(750,Proddrop)
+        
+    def CustN(event): # Custname search
+        value:str = eCName.get()
+        if value == '':
+            eCName.config(values=custlst)
         else:
-            a = float(Bdic.get())
+            CName = []
+            for item in custlst:
+                if value.lower() in item.lower():
+                    CName.append(item)
+            CName.insert(0,value)
+            eCName.config(values=CName)
 
-        if Btot.get() == '':
-            b = 0.0
+    def Discount(typ:int,val:str|float): # Calculate discount
+        val = float(val)
+        btotal = Total.get()
+        if typ==1: #calc %
+            dis_ru = str(round((val/100)*btotal,2))
+            btotal=round(btotal-float(dis_ru),2)
+            Dis_ru.set(dis_ru)
+
+        else: #calc ₹
+            dis_per = str(round((val*100)/btotal,2))
+            btotal=round(btotal-val,2)
+            Dis_per.set(dis_per)
+        
+        Total.set(btotal)
+        eBnet.configure(text=f"₹{Total.get()}")
+
+    def Credit(): # Credit
+        if Typ.get() == "Full" :
+            eType1.config(bg='light gray')
+            eType2.config(bg='SystemButtonFace')
+            Adv.set("")
+            ePay.config(state="disabled")
         else:
-            b = float(Btot.get())
-
-        try:
-            e = str(round((a * b) / 100, 2))
-        except ZeroDivisionError:
-            e = '0.0'
-        Bdisc.set(e)
-
-        BBnet = round(b - float(e), 2)
-        Bnet.set(BBnet)
-        eBnet.config(text=f"₹{Bnet.get()}")
-
-    def discount0():
-        if Bdisc.get() == '':
-            a = 0.0
-        else:
-            a = float(Bdisc.get())
-
-        if Btot.get() == '':
-            b = 0.0
-        else:
-            b = float(Btot.get())
-
-        try:
-            d = str(round((a * 100) / b, 2))
-        except ZeroDivisionError:
-            d = '0.0'
-        Bdic.set(d)
-
-        BBnet = b - a
-        Bnet.set(BBnet)
-        eBnet.config(text=f"₹{Bnet.get()}")
-
-    def Credit():
-        if rad.get() == 'Credit':
+            eType1.config(bg='SystemButtonFace')
+            eType2.config(bg='light gray')
             ePay.config(state="normal")
             ePay.focus()
-        elif rad.get() == 'Cash':
-            ePay.config(state="disabled")
-            ePName.focus()
 
-    def Add():
+    """ Side Panel """
+    def Add(): # Add Element
+        # Preprocessing Part
         if ePName.get() == 'Select Product':
             messagebox.showerror("Select Product", "Please Select Product")
             return
-
         try:
-            Qty = int(PQty.get())
+            int(eQty.get())
         except ValueError:
             messagebox.showerror("No Qty", "Please Enter Product Qty")
-            ePqty.focus()
+            eQty.focus()
             return
-
-        try:
-            BBdisc = float(Bdisc.get())  # Bill discount ₹
-        except ValueError:
-            BBdisc = 0.0
-        PID=""
-        Name = ePName.get()  # Product Name
+        pid:str = ""
+        name:str = ePName.get()
         for ppid, pname in prodname.items():
-            if pname == Name:
-                PID = ppid  # Product ID
-
+            if pname == name:
+                pid = ppid  # Product ID
+        qty:int = int(eQty.get())
+        stk = Check_Database(1,(pid,qty),us,pas)
+        if not stk[0]:
+            messagebox.showerror("Insuffient Stock", f"You dont have enough stock of {name}.\n Stock Availble = {stk[1]}")
+            eQty.focus()
+            Qty.set('')
+            return
+        stk = stk[1]
+        
+        # Processing Part
         demodb = mysql.connect(**DB)
         cursor = demodb.cursor()
-        cursor.execute(f"SELECT SP, GST, Unit, Stock FROM product where ProdID='{PID}'")
-        aa = cursor.fetchone()
+        cursor.execute(f"SELECT GST, Unit, SP FROM product where ProdID='{pid}'")
+        det = cursor.fetchone()
         demodb.close()
-        Pa = aa[0] * Qty  # Product Amt Before GST
-        Pgst = (Pa * float(aa[1])) / 100  # Product Amt After GST
-        Prodtot = float(round(Pa + Pgst, 2))  # Product total after GST
-        BBtot = Btot.get() + Prodtot  # Bill total after discount
-        BBnet = BBtot + BBdisc  # Bill total before discount
-        Bnet.set(BBnet)
-        Btot.set(BBtot)
-        eBtot.config(text=f"₹{Btot.get()}")
-        eBnet.config(text=f"₹{Bnet.get()}")
-        discount0()
-        if a[4] == []:  # Bill Serial No
-            ser = a[0]
-            a[0] += 1
-        else:
-            ser = a[4].pop(0)
-        tup = (ser, Name, Qty, aa[0], Prodtot, aa[1], aa[2])  # (ser,Name,qty,sp,amt,gst,unit)
-        lst1.append([PID, Qty, Prodtot, ser])  # [ProdID, Qty, Tot, ser)
-        lst2.append(aa[3])  # Stock
+        price = round((det[2]*qty)+((det[2]*qty)*(float(det[0]))/100),2)
+        tup = (name,qty,det[0],det[1],det[2],price)
+        
+        # Postprocessing Part
+        b_items.append({pid:tup})
         tv.insert('', 'end', values=tup)  # For Display Table
         tv.yview_moveto(1)
-        lst.remove(Name)
-        ePName.focus()
-        if lst == ['Select Product']:
-            ePName.config(state="disabled")
-            ePqty.config(state="disabled")
-            eBdisc.focus()
-        ePName.config(values=lst)
-        PQty.set('')
+        Total.set(Total.get()+price)
+        eBnet.configure(text=f"₹{Total.get()}")
+        Qty.set("")
+        Pname.remove(name)
+        ePName.config(values=Pname)
         ePName.current(0)
-
-    def Modify():
+    
+    def Delete(): # Remove Element
         if tv.focus() == '':
             return
-        selected = tv.focus()
-        if a[1] == selected:
-            tup = a[2]  # (ser,Name,qty,sp,amt,gst,unit)
-            abc = float(tup[4])  # Amount
-            tup[2] = PQty.get()  # Qty
-            lst1[(a[2][0]) - 1][1] = int(tup[2])
-            Pa = float(tup[3]) * float(tup[2])  # Amount Before GST
-            Pgst = (Pa * float(tup[5])) / 100  # GST Amount
-            tup[4] = round(Pa + Pgst, 2)  # Amount After GST
-            BBtot = Btot.get() - abc + tup[4]  # Bill Total Updated
-            Btot.set(BBtot)
-            eBtot.config(text=f"₹{Btot.get()}")
-            discount0()
-            a[1], a[2] = 0, 1
-            PQty.set('')
-            tv.item(selected, text="", values=tup)
-            button1.config(text='Edit Product')
-            ePqty.bind('<Return>', callback4)
-            ePName.focus()
-            return
 
-        a[1] = selected
-        a[2] = tv.item(selected)['values']
-        PQty.set(a[2][2])
-        ePqty.config(state='normal')
-        ePqty.focus()
-        button1.config(text='Save')
-        ePqty.bind('<Return>', callback6)
-
-    def Remve():
-        if tv.focus() == '':
-            return
         x = tv.focus()
-        aa = tv.item(x)['values']  # (ser,Name,qty,sp,amt,gst,unit)
-        ba = int(aa[0]) - 1
-        lst.insert(1, aa[1])
-        lst1.pop(ba)
-        lst2.pop(ba)
-        a[4].append(aa[0])
-        BBtot = Btot.get() - float(aa[4])
-        BBnet = Bnet.get() - float(aa[4])
-        Btot.set(BBtot)
-        Bnet.set(BBnet)
-        eBtot.config(text=f"₹{Btot.get()}")
-        eBnet.config(text=f"₹{Bnet.get()}")
-        ePName.config(values=lst)
-        ePName.config(state="normal")
-        ePqty.config(state="normal")
-        ePName.focus()
+        aa = tv.item(x)['values']  # (Name,qty,gst,unit,rate,price)
+        name, qty, gst, unit, sp, price = aa
+        sp = float(sp)
+        price = float(price)
+        pid = ''
+
+        for ppid, pname in prodname.items():
+            if pname == name:
+                pid = ppid
+                break
+        b_items.remove({pid: (name, qty, gst, unit, sp, price)})
+        
+        Total.set(Total.get() - float(price))
+        eBnet.configure(text=f"₹{Total.get()}")
+
+        Pname.append(name)
+        ePName.config(values=Pname)
         ePName.current(0)
         tv.delete(x)
 
-    def Clear():
-        right1.destroy()
-        Bill()
-
-    def Check():
-        if a[0] == 1:
+    def Modify(): # Edit Qty
+        if tv.focus() == '':
             return
-        CustName = CName.get()
-        if CustName == '':
+
+        nonlocal sel,sel_tup
+        select = tv.focus()
+
+        if sel!=select: # Modified
+            sel = select
+            sel_tup = tv.item(select)['values']  # (Name,qty,gst,unit,rate,price)
+            Qty.set(sel_tup[1])
+            button1.config(text='Save Edit')
+            eQty.focus()
+            eQty.bind('<Return>', Next_Modify)
+            return
+        
+        sp = float(sel_tup[4])
+        gst = float(sel_tup[2])
+        new = int(Qty.get())
+        old_price = float(sel_tup[5])
+        pid = ""
+
+        for ppid, pname in prodname.items():
+            if pname == sel_tup[0]:
+                pid = ppid
+                break
+
+        stk = Check_Database(1, (pid, new), us, pas)
+        if not stk[0]:
+            messagebox.showerror("Insufficient Stock", f"Not enough stock of {new}.\nAvailable stock = {stk[1]}")
+            return
+        
+        sel_tup[5] = float(sel_tup[5])
+        sel_tup[4] = float(sel_tup[4])
+        index = b_items.index({pid:tuple(sel_tup)})
+        sel_tup[1] = new
+        new_price = round((sp * new) + ((sp * new) * (gst) / 100), 2)
+        sel_tup[5] = new_price
+
+        b_items[index] = {pid:tuple(sel_tup)}
+        tv.item(sel, text="", values=sel_tup)
+        Total.set((Total.get()-old_price)+new_price)
+        eBnet.configure(text=f"₹{Total.get()}")
+        button1.config(text='Edit Qty')
+        eQty.bind('<Return>', Next_Prod1)
+        ePName.focus()
+        return
+
+    def Check(): # Check Before Billing
+        cc = messagebox.askquestion("Procced to Bill","Procced to Bill?")
+        if cc == 'no':
+            return
+
+        # # Preprocessing part
+        CustName = eCName.get()
+        if CustName == '' or CustName == 'Select/Type Name':
             messagebox.showerror("Unknown Customer", "Please Enter Customer Name")
             eCName.focus()
             return
-        CustID = cust_gen(CustName, us, pas)
-        tme = datetime.now()
-        BillNos = f'{tme.strftime("%y""%m""%d")}{CustID}-{D}'
-        a[3] = BillNos
-        if float(Bdic.get()) > 100:
-            messagebox.showerror("Negetive Ruprees", "Please Enter discount (%) between 0 to 100")
-            Bdic.set('0.0')
-            return
+        
+        if CustName not in custlst:
+            cid = cust_gen(CustName, us, pas)
+            count = 0
         else:
-            disc = float(Bdic.get())
-        BillAmt = Btot.get()
-        for i in range(0, a[0] - 1):
-            lst1[i].insert(0, BillNos)
-            stk = lst2[i] - lst1[i][2]
-            tup = (lst1[i][1], stk)
-            Update_other(1, tup, us, pas)
+            cid,count = Check_Database(2,(CustName,stime('%Y-%m-%d')),us,pas)
+            count += 1
+        
+        BillDate = f'{stime("%Y-%m-%d %H:%M:%S")}'
+        balance = Bal.get()
+        total = Total.get()
+        b_to_pay = total-balance-float(Adv.get())
+        Type = 'Cash' if Typ.get()=="Full" else 'Credit'
 
-        BillNet = float(Bnet.get())
-        BillDate = f'{tme.strftime("%Y")}-{tme.strftime("%m")}-{tme.strftime("%d")} {tme.strftime("%H:%M:%S")}'
-        Type = rad.get()
-        Balance=""
-        if Type == 'Cash':
-            Balance = BillNet - BillNet
-        elif Type == 'Credit':
-            if Bpay.get() == "":
-                BillPay = 0.0
-            else:
-                BillPay = float(Bpay.get())
-            Balance = BillNet - BillPay
+        # Processing part
+        if count == 0:
+            Create(5,(cid,CustName,1,balance,total),us,pas)
+            count=1
+            BillNos = f'{stime('%y%m%d')}{cid}-{count}'
+        else:
+            Update_column(4,(cid,balance,total),us,pas)
+            BillNos = f'{stime('%y%m%d')}{cid}-{count}'
 
-        tup5 = (CustID, CustName, 1, Balance, BillNet)
-        Create(5, tup5, us, pas)
+        Create(3,(BillNos,cid,Type,BillDate,len(b_items),b_to_pay,Dis_per.get(),total,balance),us,pas)
 
-        tup = (BillNos, CustID, Type, BillDate, a[0] - 1, BillAmt, disc, BillNet, Balance)
-        Create(3, tup, us, pas)
-        for tup1 in lst1:
-            Create(4, tup1, us, pas)
-
+        count=1
+        for i in b_items: # i = {ProdID:(ProdName,Qty,Gst,Unit,Rate,Price)}
+            pid,tup = list(i.items())[0]
+            Update_column(1,(pid,tup[1]),us,pas)
+            Create(4,(BillNos,pid,tup[1],tup[5],count),us,pas)
+            count+=1
+        
         PDF(BillNos)
 
+        # Postprocessing part
         QA = messagebox.askquestion("Print Pdf", f"Bill has been genrated.\nDo you want to print bill?")
         if QA == 'yes':
             filename = str(f'Bills\\Invoice {a[3]}.pdf')
             printf(filename)
         Clear()
 
-    def callback1(event):
-        # print(ePName['state'])
-        if ePName['state'] == 'disabled':
-            Check()
-            return
-        ePName.focus()
-
-    def callback2(event):
-        eBdisc.focus()
-
-    def callback3(event):
-        ePqty.focus()
-
-    def callback4(event):
-        ePName.focus()
-        Add()
-
-    def callback5(event):
-        eBdis.focus()
-
-    def callback6(event):
-        Modify()
-
-    def callback7(event):
-        Check()
-
-    scroll = Scrollbar(down)
-    scroll.pack(side=RIGHT, fill=Y)
-    tv = ttk.Treeview(down, columns=('col0', 'col1', 'col2', 'col3', 'col4', 'col5', 'col6'), show='headings',
-                      height=10, yscrollcommand=scroll.set, style="mystyle.Treeview")
-    tv.pack()
-    scroll.config(command=tv.yview)
-
-    tv.heading('col0', text='Sr No.')
-    tv.heading('col1', text='Product Name')
-    tv.heading('col2', text='Qty')
-    tv.heading('col3', text='Rate')
-    tv.heading('col4', text='Price')
-    tv.heading('col5', text='GST')
-    tv.heading('col6', text='Unit')
-
-    tv.column('col0', anchor=CENTER, width=50)
-    tv.column('col1', anchor=CENTER, width=150)
-    tv.column('col2', anchor=CENTER, width=55)
-    tv.column('col3', anchor=CENTER, width=100)
-    tv.column('col4', anchor=CENTER, width=100)
-    tv.column('col5', anchor=CENTER, width=60)
-    tv.column('col6', anchor=CENTER, width=60)
+    lCName = Label(up, text="Customer Name:", font=text_format)
+    lCName.grid(row=0, column=0, sticky=W)
+    eCName = ttk.Combobox(up, values=custlst)
+    eCName.grid(row=0, column=1, pady=5, padx=10)
+    eCName.configure(width=16, font=text_format)
+    eCName.current(0)
+    eCName.bind('<KeyRelease>', CustN)
+    eCName.bind('<Return>', Next_Prod)
+    eCName.after(750,Custdrop)
+    eCName.focus()
 
     label = Label(up, font=text_format)  # For Clock
     label.grid(row=0, column=2, sticky=W, columnspan=2)
     clock()
 
-    lBtot = Label(up, text="Before Discount:", font=text_format)
-    lBtot.grid(row=4, column=2, sticky=W)
-
-    eBtot = Label(up, text=f"₹{Btot.get()}", font=text_format)
-    eBtot.grid(row=4, column=2, sticky=E, padx=10, pady=5, columnspan=2)
-
-    lBnet = Label(up, text="After Discount:", font=text_format)
-    lBnet.grid(row=4, column=0, sticky=W)
-
-    eBnet = Label(up, text=f"₹{Bnet.get()}", font=text_format)
-    eBnet.grid(row=4, column=1, sticky=W, padx=10, pady=5)
-
-    lCName = Label(up, text="Customer Name:", font=text_format)
-    lCName.grid(row=0, column=0, sticky=W)
-
-    eCName = Entry(up, textvariable=CName, width=18, font=text_format)
-    eCName.grid(row=0, column=1, sticky=W, padx=10, pady=5)
-    eCName.bind('<Return>', callback1)
-    eCName.focus()
-
     lPName = Label(up, text="Product Name:", font=text_format)
-    lPName.grid(row=3, column=0, sticky=W)
-
+    lPName.grid(row=1, column=0, sticky=W)
     ePName = ttk.Combobox(up, values=data)
     ePName.current(0)
-    ePName.configure(width=18, font=text_format)
-    ePName.grid(row=3, column=1)
+    ePName.configure(width=16, font=text_format)
+    ePName.grid(row=1, column=1, pady=5, padx=10)
     ePName.bind('<KeyRelease>', ProdN)
-    ePName.bind('<Return>', callback3)
-    ePName.bind('<Shift_L>', callback2)
-    ePName.bind('<Shift_R>', callback2)
+    ePName.bind('<Return>', Next_Qty)
+    ePName.bind('<Shift_L>', Next_dis)
+    ePName.bind('<Shift_R>', Next_dis)
 
-    lPqty = Label(up, text="Product Qty.:", font=text_format)
-    lPqty.grid(row=3, column=2, sticky=W)
+    lQty = Label(up, text="Quantity:", font=text_format)
+    lQty.grid(row=1, column=2, sticky=W)
+    eQty = Entry(up, textvariable=Qty, width=7, font=text_format)
+    eQty.grid(row=1, column=3, sticky=W, padx=10, pady=5)
+    eQty.bind('<Return>', Next_Prod1)
+    eQty.bind('<Shift_L>', Next_dis)
+    eQty.bind('<Shift_R>', Next_dis)
 
-    ePqty = Entry(up, textvariable=PQty, width=7, font=text_format)
-    ePqty.grid(row=3, column=3, sticky=W, padx=10, pady=5)
-    ePqty.bind('<Return>', callback4)
-    ePqty.bind('<Shift_L>', callback2)
-    ePqty.bind('<Shift_R>', callback2)
+    lBdis_r = Label(up, text="Discount(₹):", font=text_format)
+    lBdis_r.grid(row=2, column=0, sticky=W)
+    eBdis_r = Entry(up, textvariable=Dis_ru, width=7, font=text_format)
+    eBdis_r.grid(row=2, column=1, sticky=W, padx=10, pady=5)
+    eBdis_r.bind('<Return>', Dis_rup)
+    eBdis_r.bind('<Shift_L>', Or_Dis_p)
+    eBdis_r.bind('<Shift_R>', Or_Dis_p)
+
+    lBdis_p = Label(up, text="Discount(%):", font=text_format)
+    lBdis_p.grid(row=2, column=2, sticky=W)
+    eBdis_p = Entry(up, textvariable=Dis_per, width=7, font=text_format)
+    eBdis_p.grid(row=2, column=3, sticky=W, padx=10, pady=5)
+    eBdis_p.bind('<Return>', Dis_perc)
+    eBdis_p.bind('<Shift_L>', Or_Dis_r)
+    eBdis_p.bind('<Shift_R>', Or_Dis_r)
 
     lType = Label(up, text="Payment Type:", font=text_format)
-    lType.grid(row=1, column=0, sticky=W)
+    lType.grid(row=3, column=0, sticky=W)
+    eType1 = Radiobutton(up, text="Full", variable=Typ, value="Full", font=text_format, command=Credit)
+    eType1.grid(row=3, column=1, sticky=W, pady=5)
+    eType2 = Radiobutton(up, text="Part", variable=Typ, value="Part", font=text_format, command=Credit)
+    eType2.grid(row=3, column=1, sticky=E, padx=10)
 
-    eType1 = Radiobutton(up, text="Cash", variable=rad, value="Cash", font=text_format, command=Credit)
-    eType1.grid(row=1, column=1, sticky=W, pady=5)
-
-    eType2 = Radiobutton(up, text="Credit", variable=rad, value="Credit", font=text_format, command=Credit)
-    eType2.grid(row=1, column=1, sticky=E, padx=10)
-
-    lBdis = Label(up, text="Bill Discount(%):", font=text_format)
-    lBdis.grid(row=2, column=0, sticky=W)
-
-    eBdis = Entry(up, textvariable=Bdic, width=7, font=text_format)
-    eBdis.grid(row=2, column=1, sticky=W, padx=10, pady=5)
-    eBdis.bind('<KeyRelease>', discount1)
-    eBdis.bind('<Return>', callback2)
-
-    lBdisc = Label(up, text="Bill Discount(₹):", font=text_format)
-    lBdisc.grid(row=2, column=2, sticky=W)
-
-    eBdisc = Entry(up, textvariable=Bdisc, width=7, font=text_format)
-    eBdisc.grid(row=2, column=3, sticky=W, padx=10, pady=5)
-    eBdisc.bind('<KeyRelease>', discount)
-    eBdisc.bind('<Return>', callback1)
-    eBdisc.bind('<Shift_L>', callback5)
-    eBdisc.bind('<Shift_R>', callback5)
-
-    lPay = Label(up, text="Pay in Advance:", font=text_format)
-    lPay.grid(row=1, column=2, sticky=W)
-
-    ePay = Entry(up, textvariable=Bpay, width=7, font=text_format)
-    ePay.grid(row=1, column=3, sticky=W, padx=10, pady=5)
+    lPay = Label(up, text="Advance:", font=text_format)
+    lPay.grid(row=3, column=2, sticky=W)
+    ePay = Entry(up, textvariable=Adv, width=7, font=text_format)
+    ePay.grid(row=3, column=3, sticky=W, padx=10, pady=5)
     ePay.config(state="disabled")
-    ePay.bind('<Return>', callback7)
+    ePay.bind('<Return>', Adv_pay)
 
-    button0 = Button(side, text="Add Product", **button_format, width=12, command=Add)
+    lBnet = Label(up, text="Bill Total:", font=text_format)
+    lBnet.grid(row=4, column=0, sticky=W)
+    eBnet = Label(up, text=f"₹{Total.get()}", font=text_format)
+    eBnet.grid(row=4, column=1, sticky=W, padx=10, pady=5)
+
+    lBtot = Label(up, text="Balance:", font=text_format)
+    lBtot.grid(row=4, column=2, sticky=W)
+    eBtot = Label(up, text=f"₹{Bal.get()}", font=text_format)
+    eBtot.grid(row=4, column=3, sticky=W, padx=10, pady=5)
+
+
+    scroll = Scrollbar(down)
+    scroll.pack(side=RIGHT, fill=Y)
+    tv = ttk.Treeview(down, columns=('col0', 'col1', 'col2', 'col3', 'col4', 'col5'), 
+                      show='headings', height=10, yscrollcommand=scroll.set, style="mystyle.Treeview")
+    tv.pack()
+    scroll.config(command=tv.yview)
+
+    tv.heading('col0', text='Product Name')
+    tv.heading('col1', text='Qty')
+    tv.heading('col2', text='GST')
+    tv.heading('col3', text='Unit')
+    tv.heading('col4', text='Rate')
+    tv.heading('col5', text='Price')
+
+    tv.column('col0', anchor=CENTER, width=175)
+    tv.column('col1', anchor=CENTER, width=60)
+    tv.column('col2', anchor=CENTER, width=60)
+    tv.column('col3', anchor=CENTER, width=60)
+    tv.column('col4', anchor=CENTER, width=100)
+    tv.column('col5', anchor=CENTER, width=100)
+
+
+    button0 = Button(side, text="Add", **button_format, width=12, command=Add)
     button0.grid(row=0, column=0, sticky=W, pady=10, padx=10)
 
-    button1 = Button(side, text="Edit Product", **button_format, width=12, command=Modify)
+    button1 = Button(side, text="Edit Qty", **button_format, width=12 ,command=Modify)
     button1.grid(row=1, column=0, sticky=W, pady=10, padx=10)
 
-    button2 = Button(side, text="Delete Product", **button_format, width=12, command=Remve)
+    button2 = Button(side, text="Delete", **button_format, width=12, command=Delete)
     button2.grid(row=2, column=0, sticky=W, pady=10, padx=10)
 
-    button3 = Button(side, text="Generate Bill", **button_format, width=12, command=Check)
+    button3 = Button(side, text="Check Out", **button_format, width=12, command=Check)
     button3.grid(row=3, column=0, sticky=W, pady=10, padx=10)
 
-    button3 = Button(side, text="Clear Screen", **button_format, width=12, command=Clear)
+    button3 = Button(side, text="Clear", **button_format, width=12, command=Clear)
     button3.grid(row=4, column=0, sticky=W, pady=10, padx=10)
 
-    button5 = Button(side, text="Main Menu", **button_format, width=12, command=Close)
+    button5 = Button(side, text="Home", **button_format, width=12, command=Close)
     button5.grid(row=5, column=0, sticky=E, pady=10, padx=10)
 
 
@@ -1138,7 +1184,7 @@ def Delsupp(): # Delete Supplier
         elif item[5] == 'Active':
             item[5] = 1
         tup = (item[0], item[5])
-        Update_other(2, tup, us, pas)
+        Update_column(2, tup, us, pas)
         Update_lst(1)
         if item[5] == 1:
             item[5] = 'Discontinued'
@@ -1223,7 +1269,7 @@ def Delprod(): # Delete Product
         elif item[4] == 'Active':
             item[4] = 1
         tup = (item[0], item[4])
-        Update_other(3, tup, us, pas)
+        Update_column(3, tup, us, pas)
         Update_lst(2)
         if item[4] == 1:
             item[4] = 'Discontinued'
@@ -1265,7 +1311,7 @@ def Suppliers_Edit(SuppID): # Modify Supplier
         SuppSelct()
 
     def Save(tup):
-        Update_All(1, tup, us, pas)
+        Update_row(1, tup, us, pas)
         Close()
 
     def Show(tup0):
@@ -1402,7 +1448,7 @@ def Products_Edit(ProdID): # Modify Product
         ProdSelect()
 
     def Save(tup1):
-        Update_All(2, tup1, us, pas)
+        Update_row(2, tup1, us, pas)
         Close()
 
     def Show(tup0):
@@ -2002,7 +2048,7 @@ def Bill_View(BillID, Date): # View Bills
                    f"product.GST, product.Unit FROM billdetail,product where billdetail.BillID = '{BillID}' AND "
                    f"billdetail.ProdID=product.ProdID ORDER BY Serial ASC;")
     Bitem = cursor.fetchall()
-    cursor.execute(f"SELECT bill.BillID, bill.CustID, Cust.Name, bill.Type, bill.Amt, bill.Disc, bill.Total, "
+    cursor.execute(f"SELECT bill.BillID, bill.CustID, Cust.Name, bill.Type, bill.Amt, bill.Dis_per, bill.Total, "
                    f"bill.Balance FROM bill,Cust where BillID = '{BillID}' AND bill.CustID=Cust.CustID")
     billd:tuple = cursor.fetchone()
     demodb.close()
@@ -2130,7 +2176,7 @@ def Cust_View(CustID): # View Customers
     cursor = demodb.cursor()
     cursor.execute(f"SELECT Name, CustID, Qty, Total, ROUND((Total-Balance),2), Balance from cust where CustID = '{CustID}'")
     CustDet:tuple = cursor.fetchone()
-    cursor.execute(f"SELECT BillID, Date, Type, bill.Qty, Disc, bill.Total,bill.Balance,ROUND((bill.Total-bill.Balance),2)"
+    cursor.execute(f"SELECT BillID, Date, Type, bill.Qty, Dis_per, bill.Total,bill.Balance,ROUND((bill.Total-bill.Balance),2)"
                    f" AS Paid FROM bill,Cust where cust.CustID = '{CustID}' AND bill.CustID=Cust.CustID;")
     Bills:tuple = cursor.fetchall()
     demodb.close()
