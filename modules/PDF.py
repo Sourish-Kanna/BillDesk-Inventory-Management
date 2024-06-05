@@ -11,71 +11,48 @@ from num2words import num2words
 
 
 def Pdf(BillID, us, pas):
-    """Create a Pdf File"""
-    PId = []
-    Pqty = []
-    Bs = []
-    Pu = []
-    Ptax = []
-    Pc = []
-    Ptot = []
-    Pamt = []
-    Pname = []
+    # Create a Pdf File
     BillID = BillID.upper()
+    DBhost = "localhost"
+    DBname = 'project'
 
-    # MySql Part
-    demodb = connect(host="localhost", user=us, passwd=pas, database="project")
+    # Connect to the MySQL database
+    demodb = connect(host=DBhost, user=us, passwd=pas, database=DBname)
     cursor = demodb.cursor()
 
-    cursor.execute(f"SELECT Date FROM bill WHERE bill.BillID='{BillID}';")
-    for i in cursor:
-        billtime = str(i[0]).split()
+    # Fetch bill details
+    cursor.execute(f"SELECT Date, Total, Dis_per, Amt FROM bill WHERE BillID='{BillID}';")
+    bill_details = cursor.fetchone()
+    billtime, BillNet, BillDisc, BillAmt = str(bill_details[0]).split(), *bill_details[1:]
 
-    cursor.execute(f"SELECT  cust.CustID, cust.Name FROM cust,bill WHERE bill.BillID='{BillID}' AND "
-                   f"cust.CustID=bill.CustID ;")
-    for i in cursor:
-        CustID = i[0]
-        CustName = i[1]
+    # Fetch customer details
+    cursor.execute(f"SELECT cust.CustID, Name FROM cust JOIN bill ON cust.CustID=bill.CustID WHERE bill.BillID='{BillID}';")
+    CustID, CustName = cursor.fetchone()
 
-    cursor.execute(f"SELECT Total,Disc,Amt FROM bill WHERE bill.BillID='{BillID}';")
-    for i in cursor:
-        BillNet = i[0]
-        BillDisc = i[1]
-        BillAmt = i[2]
+    # Fetch bill item count
+    cursor.execute(f"SELECT COUNT(BillID) FROM billdetail WHERE BillID='{BillID}';")
+    BQty = D= cursor.fetchone()[0]
 
-    cursor.execute(f"SELECT COUNT(BillID) FROM billdetail WHERE billdetail.BillID='{BillID}';")
-    for i in cursor:
-        BQty = D = i[0]
+    # Fetch bill item details
+    cursor.execute(f"SELECT ProdID, Qty, Serial, Total FROM billdetail WHERE BillID='{BillID}' ORDER BY Serial;")
+    bill_items = cursor.fetchall()
 
-    cursor.execute(
-        f"SELECT ProdID,Qty,Serial,Total FROM billdetail WHERE billdetail.BillID='{BillID}' ORDER BY BillID;")
-    for i in cursor:
-        ProdID = i[0]
-        PId.append(ProdID)
-        ProdQty = i[1]
-        Pqty.append(ProdQty)
-        Billser = i[2]
-        Bs.append(Billser)
-        Prodtot = i[3]
-        Ptot.append(Prodtot)
+    # Fetch product details for each bill item
+    product_details = {}
+    for ProdID, Qty, Serial, Total in bill_items:
+        if ProdID not in product_details:
+            cursor.execute(f"SELECT Unit, GST, SP, Name FROM product WHERE ProdID='{ProdID}';")
+            product_details[ProdID] = cursor.fetchone()
 
-    for c in PId:
-        cursor.execute(f"SELECT Unit,GST,SP,Name FROM product WHERE product.ProdID='{c}';")
-        for i in cursor:
-            ProdUnit = i[0]
-            Pu.append(ProdUnit)
-            ProdGST = i[1]
-            Ptax.append(ProdGST)
-            ProdRate = i[2]
-            Pc.append(ProdRate)
-            ProdName = i[3]
-            Pname.append(ProdName)
+    # Calculate amounts for each product
+    Pamt = [product_details[ProdID][2] * Qty for ProdID, Qty, _, _ in bill_items]
 
-    for i in range(0, len(PId)):
-        Pa = Pc[i] * Pqty[i]
-        Pamt.append(Pa)
-
+    # Close the database connection
     demodb.close()
+
+    # Prepare data for PDF creation
+    PId, Pqty, Bs, Ptot = zip(*bill_items)
+    Pu, Ptax, Pc, Pname = zip(*product_details.values())
 
     # Page Creation
     if __name__ == "__main__":
@@ -509,7 +486,7 @@ def Pdf(BillID, us, pas):
 
 if __name__ == '__main__':
     from SQL_TPass import Pass
-    pas, us = Pass()
+    pas, us = ("Ramsour1_2003","root")#Pass()
     if pas==None:
         print('Wrong Password')
         from time import sleep

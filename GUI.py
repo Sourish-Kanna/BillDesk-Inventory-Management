@@ -535,7 +535,7 @@ def Bill(): # Billing mode
         # Postprocessing part
         QA = messagebox.askquestion("Print Pdf", f"Bill has been genrated.\nDo you want to print bill?")
         if QA == 'yes':
-            filename = str(f'Bills\\Invoice {a[3]}.pdf')
+            filename = str(f'Bills\\Invoice {BillNos}.pdf')
             printf(filename)
         Clear()
 
