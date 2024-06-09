@@ -46,5 +46,5 @@ if __name__ == '__main__':
         from time import sleep
         sleep(2.5)
         raise SystemExit
-    print(Check_Database(2,("Sourish","2024-06-05"),us,pas))
+    # print(Check_Database(2,("Sourish","2024-06-05"),us,pas))
     

@@ -9,7 +9,7 @@ def Create(tab_name, tab_items, us, pas):
     
         1] supplier   --> (SuppID, SuppName, SuppAdd, SuppPhone, SuppEmail) \n
         2] product    --> (SuppID, ProdID, ProdName, ProdCost, ProdRate, ProdGST, ProdUnit, ProdStock ) \n
-        3] bill       --> (BillNos, CustID, Type, BillDate, Billser, BillAmt, BillDisc_per, BillNet,Balance) \n
+        3] bill       --> (BillNos, CustID, Type, BillDate, Billser, Paid, Dis_per, Dis_ru, BillNet,Balance) \n
         4] billdetail --> (BillNos, ProdID, ProdQty, Prodtot, Billser) \n
         5] cust       --> (CustID, CustName, Qty, Balance, Total)
     """
@@ -52,11 +52,11 @@ def Create(tab_name, tab_items, us, pas):
         conn.close()
 
     elif tab_name == 3:  # bill
-        BillNos, CustID, Type, BillDate, Billser, BillAmt, Dis_per, BillNet, Balance = tab_items
+        BillNos, CustID, Type, BillDate, Billser, Paid, Dis_per, Dis_ru, BillNet, Balance = tab_items
         conn = mysql.connector.connect(host="localhost", user=us, passwd=pas, database=DBname)
         cursor = conn.cursor()
-        sql = f"INSERT INTO bill(BillID,CustID,Type,Date,Qty,Amt,Dis_per,Total,Balance) " \
-              f"VALUES ('{BillNos}','{CustID}','{Type}','{BillDate}',{Billser}, {BillAmt},{Dis_per},{BillNet}, {Balance});"
+        sql = f"INSERT INTO bill(BillID,CustID,Type,Date,Qty,Paid,Dis_per,Dis_ru,Total,Balance) " \
+              f"VALUES ('{BillNos}','{CustID}','{Type}','{BillDate}',{Billser}, {Paid},{Dis_per},{Dis_ru},{BillNet}, {Balance});"
         cursor.execute(sql)
         conn.commit()
         conn.close()

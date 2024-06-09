@@ -20,10 +20,10 @@ def SQLTAB(us, pas):
     sql = 'CREATE TABLE cust(CustID CHAR(3) NOT NULL PRIMARY KEY, Name VARCHAR(50) NOT NULL DEFAULT ' \
           '\'Customer\', Qty INT NOT NULL, Balance FLOAT NOT NULL, Total FLOAT NOT NULL); '
     cursor.execute(sql)
-    sql = 'CREATE TABLE bill(BillID CHAR (12) NOT NULL PRIMARY KEY, CustID CHAR(3) NOT NULL ,FOREIGN KEY (CustID) ' \
-          'REFERENCES cust(CustID), Type ENUM(\'Cash\', \'Credit\') NOT NULL, Date DATETIME NOT NULL, ' \
-          'Qty INT NOT NULL, Amt FLOAT NOT NULL, Dis_per FLOAT NOT NULL DEFAULT \'0.00\', Total FLOAT NOT NULL, ' \
-          'Balance FLOAT NOT NULL); '
+    sql = 'CREATE TABLE bill(BillID CHAR (12) NOT NULL PRIMARY KEY, CustID CHAR(3) NOT NULL ' \
+          'REFERENCES cust(CustID), Date DATETIME NOT NULL, Qty INT NOT NULL, Total FLOAT NOT NULL, '\
+          'Type ENUM(\'Cash\', \'Credit\') NOT NULL, Balance FLOAT NOT NULL, Paid FLOAT NOT NULL, '\
+          'Dis_per FLOAT NOT NULL, Dis_ru FLOAT NOT NULL);'
     cursor.execute(sql)
     sql = 'CREATE TABLE billdetail(BillID CHAR (12) NOT NULL, FOREIGN KEY (BillID) REFERENCES bill(BillID), ' \
           'ProdID CHAR(6) NOT NULL, FOREIGN KEY (ProdID) REFERENCES product(ProdID), Qty INT NOT NULL, Total Float ' \

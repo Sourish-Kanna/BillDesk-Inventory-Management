@@ -477,7 +477,6 @@ def Bill(): # Billing mode
         sel_tup[1] = new
         new_price = round((sp * new) + ((sp * new) * (gst) / 100), 2)
         sel_tup[5] = new_price
-
         b_items[index] = {pid:tuple(sel_tup)}
         tv.item(sel, text="", values=sel_tup)
         Total.set((Total.get()-old_price)+new_price)
@@ -492,7 +491,7 @@ def Bill(): # Billing mode
         if cc == 'no':
             return
 
-        # # Preprocessing part
+        # Preprocessing part
         CustName = eCName.get()
         if CustName == '' or CustName == 'Select/Type Name':
             messagebox.showerror("Unknown Customer", "Please Enter Customer Name")
@@ -501,6 +500,7 @@ def Bill(): # Billing mode
         
         if CustName not in custlst:
             cid = cust_gen(CustName, us, pas)
+            Update_lst(6)
             count = 0
         else:
             cid,count = Check_Database(2,(CustName,stime('%Y-%m-%d')),us,pas)
@@ -509,7 +509,7 @@ def Bill(): # Billing mode
         BillDate = f'{stime("%Y-%m-%d %H:%M:%S")}'
         balance = Bal.get()
         total = Total.get()
-        b_to_pay = total-balance-float(Adv.get())
+        b_paid = total-balance
         Type = 'Cash' if Typ.get()=="Full" else 'Credit'
 
         # Processing part
@@ -521,7 +521,7 @@ def Bill(): # Billing mode
             Update_column(4,(cid,balance,total),us,pas)
             BillNos = f'{stime('%y%m%d')}{cid}-{count}'
 
-        Create(3,(BillNos,cid,Type,BillDate,len(b_items),b_to_pay,Dis_per.get(),total,balance),us,pas)
+        Create(3,(BillNos,cid,Type,BillDate,len(b_items),b_paid,Dis_per.get(),Dis_ru.get(),total,balance),us,pas)
 
         count=1
         for i in b_items: # i = {ProdID:(ProdName,Qty,Gst,Unit,Rate,Price)}
@@ -2051,6 +2051,7 @@ def Bill_View(BillID, Date): # View Bills
     cursor.execute(f"SELECT bill.BillID, bill.CustID, Cust.Name, bill.Type, bill.Amt, bill.Dis_per, bill.Total, "
                    f"bill.Balance FROM bill,Cust where BillID = '{BillID}' AND bill.CustID=Cust.CustID")
     billd:tuple = cursor.fetchone()
+    BillID, CustID, Name, btype, Amt, Dis_per, Total, Balance = billd
     demodb.close()
     CName = StringVar()
     Cid = StringVar()
@@ -2060,11 +2061,11 @@ def Bill_View(BillID, Date): # View Bills
     Bpay = StringVar()
     Type = StringVar()
 
-    CName.set(billd[2])
-    Cid.set(billd[1])
-    Bdisc.set(f'{abs(round(billd[4] - billd[6], 2))} ({billd[5]}%)')
-    Type.set(billd[3])
-    Bnet.set(f"₹{billd[6]}")
+    CName.set(Name)
+    Cid.set(CustID)
+    Bdisc.set(f'{round(Balance,2)} ({Dis_per}%)')
+    Type.set(btype)
+    Bnet.set(f"₹{Total}")
     if Type.get() == 'Cash':
         Btot.set(f"₹{billd[6]}")
         Bpay.set(f'₹0.0')
