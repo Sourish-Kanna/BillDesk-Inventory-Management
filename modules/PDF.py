@@ -57,9 +57,6 @@ def Pdf(BillID, us, pas):
     styleBH = styles["Normal"]
     styleBH.alignment = TA_CENTER
 
-    # Variables
-    Page_Decide = Decide if Decide <= 20 else 20
-
     title:str = f'A. Somasundara Nadar & Co.'
     cont:str = f'Ph. No 04634-240430'
     add:str = f'GSTIN : 27AACCA8432H1ZQ'
@@ -129,38 +126,137 @@ def Pdf(BillID, us, pas):
         def Bye():
             x, y = 100, height - req_hei - 270
             return x, int(y)
+    
+    elif Decide > 20 and Decide <= 25:
+        def table(max):
+            x, y = 40, height - max - 150
+            return x, y
 
-    data = [[Paragraph('''<b>Sr No.</b>''', styleBH), Paragraph('''<b>Product</b>''', styleBH),
+        def Bot_tot():
+            x, y = 40, height - 70
+            return x, int(y)
+        
+        def Bot_txt():
+            x, y = 40, height - 90
+            return x, int(y)
+
+        def Amt_row():
+            x, y = 40, height - 120
+            return x, int(y)
+        
+        def Cont():
+            x, y = 40, height - 140
+            return x, int(y)
+
+        def Bye():
+            x, y = 100, height - 170
+            return x, int(y)
+
+    else:
+        def table(max):
+            x, y = 40, height - max - 150
+            return x, y
+
+        def table_new_page(max):
+            x, y = 40, height - max - 40
+            return x, y
+        
+        def table_last_page(max):
+            x, y = 40, height - max - 40
+            return x, y
+
+        def Bot_tot(max):
+            x, y = 40, height - max - 70
+            return x, int(y)
+        
+        def Bot_txt(max):
+            x, y = 40, height - max - 90
+            return x, int(y)
+
+        def Amt_row(max):
+            x, y = 40, height - max - 120
+            return x, int(y)
+        
+        def Cont(max):
+            x, y = 40, height - max - 140
+            return x, int(y)
+
+        def Bye(max):
+            x, y = 100, height - max - 170
+            return x, int(y)
+
+    # Table Placemet and end part
+    if Decide <= 20:
+        data = [[Paragraph('''<b>Sr No.</b>''', styleBH), Paragraph('''<b>Product</b>''', styleBH),
              Paragraph('''<b>Qty</b>''', styleBH), Paragraph('''<b>Units</b>''', styleBH),
              Paragraph('''<b>Rate</b>''', styleBH), Paragraph('''<b>Amount</b>''', styleBH),
              Paragraph('''<b>Tax</b>''', styleBH), Paragraph('''<b>Total</b>''', styleBH)]]
     
-    for i in range(0, Page_Decide):
-        p_ser = bill_items[i][2]
-        p_pid = bill_items[i][0]
-        p_name = product_details[p_pid][0]
-        p_qty = bill_items[i][1]
-        p_unit = product_details[p_pid][2]
-        p_rate = product_details[p_pid][1]
-        p_amt = Pamt[i]
-        p_tax = product_details[p_pid][3]
-        p_total = bill_items[i][3]
-        c = [Paragraph(f'{p_ser}', styleN), Paragraph(f'{p_name}', styleN), Paragraph(f'{p_qty}', styleN),
-             Paragraph(f'{p_unit}', styleN), Paragraph(f'{p_rate}', styleN), Paragraph(f'{p_amt}', styleN),
-             Paragraph(f'{p_tax}', styleN), Paragraph(f'{p_total}', styleN)]
-        data.append(c)
+        for i in range(0, Decide):
+            p_ser = bill_items[i][2]
+            p_pid = bill_items[i][0]
+            p_name = product_details[p_pid][0]
+            p_qty = bill_items[i][1]
+            p_unit = product_details[p_pid][2]
+            p_rate = product_details[p_pid][1]
+            p_amt = Pamt[i]
+            p_tax = product_details[p_pid][3]
+            p_total = bill_items[i][3]
+            c = [Paragraph(f'{p_ser}', styleN), Paragraph(f'{p_name}', styleN), Paragraph(f'{p_qty}', styleN),
+                Paragraph(f'{p_unit}', styleN), Paragraph(f'{p_rate}', styleN), Paragraph(f'{p_amt}', styleN),
+                Paragraph(f'{p_tax}', styleN), Paragraph(f'{p_total}', styleN)]
+            data.append(c)
 
-    if Decide <= 20:
         data.append(
             ['', '', '', '', '', '', Paragraph('''<b>Net Total</b>''', styleBH), Paragraph(f'{net_tot}', styleN)])
+        
+        t = Table(data, rowHeights=25, colWidths=[45, 210, 30, 40, 50, 50, 50, 50])
+        t.setStyle(TableStyle([('ALIGN', (0, 0), (-1, -1), 'CENTER'), ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'), 
+                            ('INNERGRID', (0, 0), (-1, -1), 1, colors.black), ('BOX', (0, 0), (-1, -1), 1, colors.black), ]))
+        req_wid,req_hei = t.wrapOn(document, width, height)
+        t.drawOn(document, *table(req_hei))
+        
+        aa = [Bot_tot,Bot_txt,Amt_row,Cont,Bye]
+        b = botom_text.split('\n')
+        for i in range(0,len(b)):
+            if aa[i] == Bot_tot or aa[i] == Bye:
+                document.setFont("Helvetica-Bold", 17)
+            else:
+                document.setFont("Helvetica", 16)
+            document.drawString(*aa[i](),b[i])
+    
+    elif Decide > 20 and Decide <= 25:
+        data = [[Paragraph('''<b>Sr No.</b>''', styleBH), Paragraph('''<b>Product</b>''', styleBH),
+             Paragraph('''<b>Qty</b>''', styleBH), Paragraph('''<b>Units</b>''', styleBH),
+             Paragraph('''<b>Rate</b>''', styleBH), Paragraph('''<b>Amount</b>''', styleBH),
+             Paragraph('''<b>Tax</b>''', styleBH), Paragraph('''<b>Total</b>''', styleBH)]]
+    
+        for i in range(0, Decide):
+            p_ser = bill_items[i][2]
+            p_pid = bill_items[i][0]
+            p_name = product_details[p_pid][0]
+            p_qty = bill_items[i][1]
+            p_unit = product_details[p_pid][2]
+            p_rate = product_details[p_pid][1]
+            p_amt = Pamt[i]
+            p_tax = product_details[p_pid][3]
+            p_total = bill_items[i][3]
+            c = [Paragraph(f'{p_ser}', styleN), Paragraph(f'{p_name}', styleN), Paragraph(f'{p_qty}', styleN),
+                Paragraph(f'{p_unit}', styleN), Paragraph(f'{p_rate}', styleN), Paragraph(f'{p_amt}', styleN),
+                Paragraph(f'{p_tax}', styleN), Paragraph(f'{p_total}', styleN)]
+            data.append(c)
 
-    t = Table(data, rowHeights=25, colWidths=[45, 210, 30, 40, 50, 50, 50, 50])
-    t.setStyle(TableStyle([('ALIGN', (0, 0), (-1, -1), 'CENTER'), ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'), 
-                           ('INNERGRID', (0, 0), (-1, -1), 1, colors.black), ('BOX', (0, 0), (-1, -1), 1, colors.black), ]))
-    req_wid,req_hei = t.wrapOn(document, width, height)
-    t.drawOn(document, *table(req_hei))
+        data.append(
+            ['', '', '', '', '', '', Paragraph('''<b>Net Total</b>''', styleBH), Paragraph(f'{net_tot}', styleN)])
+        
+        t = Table(data, rowHeights=25, colWidths=[45, 210, 30, 40, 50, 50, 50, 50])
+        t.setStyle(TableStyle([('ALIGN', (0, 0), (-1, -1), 'CENTER'), ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'), 
+                            ('INNERGRID', (0, 0), (-1, -1), 1, colors.black), ('BOX', (0, 0), (-1, -1), 1, colors.black), ]))
+        req_wid,req_hei = t.wrapOn(document, width, height)
+        t.drawOn(document, *table(req_hei))
 
-    if Decide <= 20:
+        document.showPage()
+
         aa = [Bot_tot,Bot_txt,Amt_row,Cont,Bye]
         b = botom_text.split('\n')
         for i in range(0,len(b)):
@@ -170,22 +266,122 @@ def Pdf(BillID, us, pas):
                 document.setFont("Helvetica", 16)
             document.drawString(*aa[i](),b[i])
 
+    else:
+        data = [[Paragraph('''<b>Sr No.</b>''', styleBH), Paragraph('''<b>Product</b>''', styleBH),
+             Paragraph('''<b>Qty</b>''', styleBH), Paragraph('''<b>Units</b>''', styleBH),
+             Paragraph('''<b>Rate</b>''', styleBH), Paragraph('''<b>Amount</b>''', styleBH),
+             Paragraph('''<b>Tax</b>''', styleBH), Paragraph('''<b>Total</b>''', styleBH)]]
+    
+        for i in range(0, 26):
+            p_ser = bill_items[i][2]
+            p_pid = bill_items[i][0]
+            p_name = product_details[p_pid][0]
+            p_qty = bill_items[i][1]
+            p_unit = product_details[p_pid][2]
+            p_rate = product_details[p_pid][1]
+            p_amt = Pamt[i]
+            p_tax = product_details[p_pid][3]
+            p_total = bill_items[i][3]
+            c = [Paragraph(f'{p_ser}', styleN), Paragraph(f'{p_name}', styleN), Paragraph(f'{p_qty}', styleN),
+                Paragraph(f'{p_unit}', styleN), Paragraph(f'{p_rate}', styleN), Paragraph(f'{p_amt}', styleN),
+                Paragraph(f'{p_tax}', styleN), Paragraph(f'{p_total}', styleN)]
+            data.append(c)
+        
+        t = Table(data, rowHeights=25, colWidths=[45, 210, 30, 40, 50, 50, 50, 50])
+        t.setStyle(TableStyle([('ALIGN', (0, 0), (-1, -1), 'CENTER'), ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'), 
+                            ('INNERGRID', (0, 0), (-1, -1), 1, colors.black), ('BOX', (0, 0), (-1, -1), 1, colors.black), ]))
+        req_wid,req_hei = t.wrapOn(document, width, height)
+        t.drawOn(document, *table(req_hei))
+
+        document.showPage()
+
+        data = [[Paragraph('''<b>Sr No.</b>''', styleBH), Paragraph('''<b>Product</b>''', styleBH),
+             Paragraph('''<b>Qty</b>''', styleBH), Paragraph('''<b>Units</b>''', styleBH),
+             Paragraph('''<b>Rate</b>''', styleBH), Paragraph('''<b>Amount</b>''', styleBH),
+             Paragraph('''<b>Tax</b>''', styleBH), Paragraph('''<b>Total</b>''', styleBH)]]
+
+        for i in range(0,(Decide-26)//30):
+            DD = 26 + i*(30)
+            print(DD,DD+30)
+            data = [[Paragraph('''<b>Sr No.</b>''', styleBH), Paragraph('''<b>Product</b>''', styleBH),
+                Paragraph('''<b>Qty</b>''', styleBH), Paragraph('''<b>Units</b>''', styleBH),
+                Paragraph('''<b>Rate</b>''', styleBH), Paragraph('''<b>Amount</b>''', styleBH),
+                Paragraph('''<b>Tax</b>''', styleBH), Paragraph('''<b>Total</b>''', styleBH)]]
+            for i in range(DD, DD+30):
+                p_ser = bill_items[i][2]
+                p_pid = bill_items[i][0]
+                p_name = product_details[p_pid][0]
+                p_qty = bill_items[i][1]
+                p_unit = product_details[p_pid][2]
+                p_rate = product_details[p_pid][1]
+                p_amt = Pamt[i]
+                p_tax = product_details[p_pid][3]
+                p_total = bill_items[i][3]
+                c = [Paragraph(f'{p_ser}', styleN), Paragraph(f'{p_name}', styleN), Paragraph(f'{p_qty}', styleN),
+                    Paragraph(f'{p_unit}', styleN), Paragraph(f'{p_rate}', styleN), Paragraph(f'{p_amt}', styleN),
+                    Paragraph(f'{p_tax}', styleN), Paragraph(f'{p_total}', styleN)]
+                data.append(c)
+
+            t = Table(data, rowHeights=25, colWidths=[45, 210, 30, 40, 50, 50, 50, 50])
+            t.setStyle(TableStyle([('ALIGN', (0, 0), (-1, -1), 'CENTER'), ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'), 
+                                ('INNERGRID', (0, 0), (-1, -1), 1, colors.black), ('BOX', (0, 0), (-1, -1), 1, colors.black), ]))
+            req_wid,req_hei = t.wrapOn(document, width, height)
+            t.drawOn(document, *table_new_page(req_hei))
+            document.showPage()
+        
+        DD = Decide - (Decide-26)//30
+        print(DD,Decide)
+        data = [[Paragraph('''<b>Sr No.</b>''', styleBH), Paragraph('''<b>Product</b>''', styleBH),
+            Paragraph('''<b>Qty</b>''', styleBH), Paragraph('''<b>Units</b>''', styleBH),
+            Paragraph('''<b>Rate</b>''', styleBH), Paragraph('''<b>Amount</b>''', styleBH),
+            Paragraph('''<b>Tax</b>''', styleBH), Paragraph('''<b>Total</b>''', styleBH)]]
+        for i in range(DD, Decide):
+            p_ser = bill_items[i][2]
+            p_pid = bill_items[i][0]
+            p_name = product_details[p_pid][0]
+            p_qty = bill_items[i][1]
+            p_unit = product_details[p_pid][2]
+            p_rate = product_details[p_pid][1]
+            p_amt = Pamt[i]
+            p_tax = product_details[p_pid][3]
+            p_total = bill_items[i][3]
+            c = [Paragraph(f'{p_ser}', styleN), Paragraph(f'{p_name}', styleN), Paragraph(f'{p_qty}', styleN),
+                Paragraph(f'{p_unit}', styleN), Paragraph(f'{p_rate}', styleN), Paragraph(f'{p_amt}', styleN),
+                Paragraph(f'{p_tax}', styleN), Paragraph(f'{p_total}', styleN)]
+            data.append(c)
+
+        data.append(
+        ['', '', '', '', '', '', Paragraph('''<b>Net Total</b>''', styleBH), Paragraph(f'{net_tot}', styleN)])
+
+        t = Table(data, rowHeights=25, colWidths=[45, 210, 30, 40, 50, 50, 50, 50])
+        t.setStyle(TableStyle([('ALIGN', (0, 0), (-1, -1), 'CENTER'), ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'), 
+                            ('INNERGRID', (0, 0), (-1, -1), 1, colors.black), ('BOX', (0, 0), (-1, -1), 1, colors.black), ]))
+        req_wid,req_hei = t.wrapOn(document, width, height)
+        t.drawOn(document, *table_last_page(req_hei))
+
+        aa = [Bot_tot,Bot_txt,Amt_row,Cont,Bye]
+        b = botom_text.split('\n')
+        for i in range(0,len(b)):
+            if aa[i] == Bot_tot or aa[i] == Bye:
+                document.setFont("Helvetica-Bold", 17)
+            else:
+                document.setFont("Helvetica", 16)
+            document.drawString(*aa[i](req_hei),b[i])
+
     document.save()
 
 if __name__ == '__main__':
     from SQL_TPass import Pass
-    pas, us = ("Ramsour1_2003","root") #Pass()
+    pas, us = Pass()
     if pas==None:
         print('Wrong Password')
         from time import sleep
         sleep(2.5)
         raise SystemExit
-    # demodb = connect(host="localhost", user=us, passwd=pas, database="project")
-    # cursor = demodb.cursor()
-    # cursor.execute(f"SELECT BillID FROM bill")
-    # for i in cursor:
-    #     print(i[0])
-    # demodb.close()
-    # Pdf(input("BillId: "), us, pas)
-    Pdf('240610C01-1', us, pas)
-    Pdf('240610C01-7', us, pas)
+    demodb = connect(host="localhost", user=us, passwd=pas, database="project")
+    cursor = demodb.cursor()
+    cursor.execute(f"SELECT BillID FROM bill")
+    for i in cursor:
+        print(i[0])
+    demodb.close()
+    Pdf(input("BillId: "), us, pas)
