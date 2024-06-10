@@ -2048,10 +2048,10 @@ def Bill_View(BillID, Date): # View Bills
                    f"product.GST, product.Unit FROM billdetail,product where billdetail.BillID = '{BillID}' AND "
                    f"billdetail.ProdID=product.ProdID ORDER BY Serial ASC;")
     Bitem = cursor.fetchall()
-    cursor.execute(f"SELECT bill.BillID, bill.CustID, Cust.Name, bill.Type, bill.Amt, bill.Dis_per, bill.Total, "
-                   f"bill.Balance FROM bill,Cust where BillID = '{BillID}' AND bill.CustID=Cust.CustID")
+    cursor.execute(f"SELECT bill.BillID, bill.CustID, Cust.Name, bill.Type, bill.Paid, bill.Dis_per, bill.Total, "
+                   f"bill.Balance, bill.Dis_ru FROM bill,Cust where BillID = '{BillID}' AND bill.CustID=Cust.CustID")
     billd:tuple = cursor.fetchone()
-    BillID, CustID, Name, btype, Amt, Dis_per, Total, Balance = billd
+    BillID, CustID, Name, btype, Paid, Dis_per, Total, Balance, Dis_ru = billd
     demodb.close()
     CName = StringVar()
     Cid = StringVar()
@@ -2063,15 +2063,15 @@ def Bill_View(BillID, Date): # View Bills
 
     CName.set(Name)
     Cid.set(CustID)
-    Bdisc.set(f'{round(Balance,2)} ({Dis_per}%)')
+    Bdisc.set(f'{round(Dis_ru,2)} ({Dis_per}%)')
     Type.set(btype)
     Bnet.set(f"₹{Total}")
     if Type.get() == 'Cash':
-        Btot.set(f"₹{billd[6]}")
+        Btot.set(f"₹{Total}")
         Bpay.set(f'₹0.0')
     elif Type.get() == 'Credit':
-        Btot.set(f"₹{abs(round(billd[6] - billd[7]))}")
-        Bpay.set(f'₹{billd[7]}')
+        Btot.set(f"₹{Paid}")
+        Bpay.set(f'₹{Balance}')
 
     def Close():
         right1.destroy()
