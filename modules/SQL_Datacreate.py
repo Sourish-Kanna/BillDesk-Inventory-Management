@@ -56,7 +56,7 @@ def del_sql(us, pas):
 
 if __name__ == '__main__':
     from SQL_TPass import Pass
-    pas, us = ("Ramsour1_2003","root")#Pass()
+    pas, us = Pass()
     if pas==None:
         from time import sleep
         sleep(2.5)

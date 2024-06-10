@@ -40,11 +40,10 @@ def Check_Database(tab_name:int, tab_items:tuple, us:str, pas:str):
 
 if __name__ == '__main__':
     from SQL_TPass import Pass
-    #pas, us = Pass()
-    pas, us = 'Ramsour1_2003', 'root'
+    pas, us = Pass()
     if pas==None:
         from time import sleep
         sleep(2.5)
         raise SystemExit
-    # print(Check_Database(2,("Sourish","2024-06-05"),us,pas))
+    print(Check_Database(2,("Sourish","2024-06-05"),us,pas))
     

@@ -94,9 +94,8 @@ def Create(tab_name, tab_items, us, pas):
 
 
 if __name__ == '__main__':
-    # from SQL_TPass import Pass
-    # pas, us = Pass()
-    pas, us = 'Ramsour1_2003', 'root'
+    from SQL_TPass import Pass
+    pas, us = Pass()
     if pas == None:
         from time import sleep
         sleep(2.5)
