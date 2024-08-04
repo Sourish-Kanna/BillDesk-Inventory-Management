@@ -21,7 +21,6 @@ from tkinter import *
 
 
 """ Constants """
-# pas, us = 'Ramsour1_2003', 'root'
 pas, us = Pas.Pass()
 bgcol:str = "#add8e6"
 text_format:tuple = ("arial", 14)
