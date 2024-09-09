@@ -1,26 +1,31 @@
-# This Software is developed for A. Somasundara Nadar & Co., Kadayam, Tenkasi Dist., Tamil Nadu.
-**[Demomstration Link](https://drive.google.com/file/d/1ZzX9RPLTunw5EYw8mmggRQNUWuSAbGvF/view?usp=drive_link)**
-## Main Points:
-1.   **A CSV file can be used to enter all data to database.**
-2.   **Installs required modules itself, internet connection is required.**
-3.   **Add New supplier and product.**
-4.   **Login Interface can save password for faster login**
+# This Software is developed for A. Somasundara Nadar & Co., Kadayam, Tenkasi Dist., Tamil Nadu
 
-5.   **Modify Module:**
-- Change Details of existing active supplier and products.
-- Change status of supplier and product to active and discontinued.
-6.   **View module:**
-- See all supplier even discontinued ones.
-- See all products of all suppliers even discontinued ones, after selecting a product you can see all details of that product.
-- See all bills that are generated, after selecting a bill you can see all items of that bill.
-7.   **Billing Module:**
-- Get customer name.
-- Add required items to bill.
-- Modify quantity of items if required.
-- Generate pdf after creation of bill.connection is required.
+The application offers a user-friendly interface for managing suppliers, products, and billing. It provides features like easy installation, multiple user support, data import/export, and efficient billing processes. Users can view detailed information about suppliers, products, and bills, as well as track customer payments. The application also ensures data security with double encryption for saved passwords.
 
-![Slide1](https://github.com/Sourish-Kanna/BillDesk-Inventory-Management/assets/115524993/fdd6d104-fd79-4ce6-8e99-b9546d4173a0)
-![Slide2](https://github.com/Sourish-Kanna/BillDesk-Inventory-Management/assets/115524993/486138e9-8a90-493e-aa16-5ef7b1fa7cba)
-![Slide3](https://github.com/Sourish-Kanna/BillDesk-Inventory-Management/assets/115524993/ec03cefd-1f4e-4305-94c3-0072b488277f)
-![Slide4](https://github.com/Sourish-Kanna/BillDesk-Inventory-Management/assets/115524993/0a4bbab2-6991-4b8a-ba9a-d80bbc78653e)
-![Slide5](https://github.com/Sourish-Kanna/BillDesk-Inventory-Management/assets/115524993/651421c8-8734-447c-a26d-83d61715a06a)
+## Key Features
+
+1. **Prerequisite Installation**:
+    - It prompts users to that required modules will be installed
+    - User also have option to uninstall modules
+    - Internet connectivity required
+2. **Login & Authentication**:
+    - Supports diffrent user (User should be set in database)
+    - Option to save password for faster login
+    - Password saved are double encrypted
+3. **Importing Data**:
+    - Option to import data from CSV file
+    - Manual input option also available
+    - Imports Supplier detail & Produuct details
+4. **Upadating Data**:
+    - Update Supplier & Product details and supply
+    - Discountiue Supplier & Product
+5. **Viewing Data**:
+    - View Suppliers & Products (Discontiued Included).
+    - View genrated Bills (Overview & Detailed)
+    - View Customer detail and pending payments
+6. **Billing**:
+    - Designed to streamline the billing process efficiently
+    - Key binding are used (Enter,Shift R,Shift L)
+    - Added items are displayed at bottom panel
+    - Side panel has required buttons
+    - Top panel has input fields
