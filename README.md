@@ -13,17 +13,13 @@ The application offers a user-friendly interface for managing suppliers, product
     - Option to save password for faster login
     - Password saved are double encrypted
 3. **Importing Data**:
-    - Option to import data from CSV file
-    - Manual input option also available
+    - Import data from CSV file only
     - Imports Supplier detail & Produuct details
-4. **Upadating Data**:
-    - Update Supplier & Product details and supply
-    - Discountiue Supplier & Product
-5. **Viewing Data**:
-    - View Suppliers & Products (Discontiued Included).
+4. **Viewing Data**:
+    - View Suppliers & Products.
     - View genrated Bills (Overview & Detailed)
     - View Customer detail and pending payments
-6. **Billing**:
+5. **Billing**:
     - Designed to streamline the billing process efficiently
     - Key binding are used (Enter,Shift R,Shift L)
     - Added items are displayed at bottom panel
