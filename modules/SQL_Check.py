@@ -31,7 +31,7 @@ def Check_Database(tab_name:int, tab_items:tuple, us:str, pas:str):
         conn = mysql.connector.connect(host=DBhost, user=us, passwd=pas, database=DBname)
         cursor = conn.cursor()
         sql = f"SELECT cust.CustID, COUNT(bill.BillID) AS BillCount FROM cust LEFT JOIN bill ON cust.CustID = bill.CustID \
-            AND bill.Date LIKE '{date}' WHERE cust.Name = '{cname}' GROUP BY cust.CustID UNION SELECT cust.CustID, 0 AS BillCount \
+            AND bill.Date LIKE '%{date}%' WHERE cust.Name = '{cname}' GROUP BY cust.CustID UNION SELECT cust.CustID, 0 AS BillCount \
             FROM cust WHERE cust.Name = '{cname}' AND NOT EXISTS ( SELECT 1 FROM bill JOIN cust ON cust.CustID = bill.CustID \
             WHERE bill.Date LIKE '{date}' AND cust.Name = '{cname}' );"
         cursor.execute(sql)

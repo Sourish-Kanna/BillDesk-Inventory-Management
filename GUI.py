@@ -39,9 +39,6 @@ prodqty:dict = {}  # {PID:Qty}  To Check Avaible Stock
 
 
 """ Other Functions """
-def Search(): # Search Window
-    return None
-
 def Helpwind(): # Help Window
     import modules.Help
     modules.Help.Help()
@@ -102,6 +99,15 @@ def sql_csv(): # Genrate CSV File
         button1.pack(pady=10, padx=10)
 
 def Update_lst(what): # Genrate Alpha List
+    """
+    Genrate Alpha List What value:
+        1 - genrate list of supplier
+        2 - genrate list of product
+        3 - genrate list of bill
+        4 - genrate list of all
+        5 - genrate list of product qty
+        6 - genrate list of customer name
+    """
     demodb = mysql.connect(**DB)
     cursor = demodb.cursor()
     
@@ -182,7 +188,7 @@ def Main(): # Home Screen
 
     b0 = Button(right0, text="Add", width=12, **button_format, command=lambda *args: Comon(1))
     b0.grid(row=0, column=0, padx=10, pady=10)
-    b1 = Button(right0, text="Modify", width=12, **button_format, command=lambda *args: Comon(2))
+    b1 = Button(right0, text="Update", width=12, **button_format, command=lambda *args: Comon(2))
     b1.grid(row=1, column=0, padx=10, pady=10)
     b3 = Button(right0, text="View", width=12, **button_format, command=lambda *args: Comon(4))
     b3.grid(row=2, column=0, padx=10, pady=5)
@@ -204,6 +210,7 @@ def Bill(): # Billing mode
 
     sel = None
     sel_tup = None
+    bill_total = 0.0
     Bal = DoubleVar()  # Bill Ballance
     Qty = StringVar()  # Product Qty
     Typ = StringVar()  # Bill Payment Type
@@ -219,6 +226,7 @@ def Bill(): # Billing mode
     """ Other Interface """
     def Clear(): # Clear Interface
         right1.destroy()
+        Update_lst(4)
         Bill()
 
     def Close(): # Close Interface
@@ -267,7 +275,6 @@ def Bill(): # Billing mode
         
         Bal.set(btotal)
         eBtot.configure(text=f"₹{Bal.get()}")
-        Check()
 
     def Next_Modify(event):
         Modify()
@@ -313,6 +320,9 @@ def Bill(): # Billing mode
         Credit()
         eType1.focus()
 
+    def checkout(event):
+        Check()
+
     """ Calculate """
     def ProdN(event): # Prodname search
         value = ePName.get()
@@ -341,7 +351,7 @@ def Bill(): # Billing mode
 
     def Discount(typ:int,val:str|float): # Calculate discount
         val = float(val)
-        btotal = Total.get()
+        btotal = float(bill_total)
         if typ==1: #calc %
             dis_ru = str(round((val/100)*btotal,2))
             btotal=round(btotal-float(dis_ru),2)
@@ -406,6 +416,8 @@ def Bill(): # Billing mode
         b_items.append({pid:tup})
         tv.insert('', 'end', values=tup)  # For Display Table
         tv.yview_moveto(1)
+        nonlocal bill_total
+        bill_total = bill_total + price
         Total.set(Total.get()+price)
         eBnet.configure(text=f"₹{Total.get()}")
         Qty.set("")
@@ -519,8 +531,11 @@ def Bill(): # Billing mode
         else:
             Update_column(4,(cid,balance,total),us,pas)
             BillNos = f'{stime('%y%m%d')}{cid}-{count}'
-
-        Create(3,(BillNos,cid,Type,BillDate,len(b_items),b_paid,Dis_per.get(),Dis_ru.get(),total,balance),us,pas)
+        
+        dis_per = Dis_per.get() if Dis_per.get() else '0.0'
+        dis_ru = Dis_ru.get() if Dis_ru.get() else '0.0'
+        
+        Create(3,(BillNos,cid,Type,BillDate,len(b_items),b_paid,dis_per,dis_ru,total,balance),us,pas)
 
         count=1
         for i in b_items: # i = {ProdID:(ProdName,Qty,Gst,Unit,Rate,Price)}
@@ -601,6 +616,8 @@ def Bill(): # Billing mode
     ePay.grid(row=3, column=3, sticky=W, padx=10, pady=5)
     ePay.config(state="disabled")
     ePay.bind('<Return>', Adv_pay)
+    ePay.bind('<Shift_L>', checkout)
+    ePay.bind('<Shift_R>', checkout)
 
     lBnet = Label(up, text="Bill Total:", font=text_format)
     lBnet.grid(row=4, column=0, sticky=W)
@@ -851,7 +868,7 @@ def Products_Add(): # Add product
         right1.focus_set()
         right1.bind('<Return>', callback)
 
-        button1.configure(text="All Ok! Lets save it", command=OK)
+        button1.configure(text="All Ok! Lets save it", command=OK, width=15)
         button2.configure(text="Cancel", command=Back)
 
     def Check():
@@ -995,7 +1012,7 @@ def Products_Add(): # Add product
     button2.grid(row=8, column=1, pady=10, padx=10, sticky=E)
 
 
-""" Modify Functions """
+""" Update Functions """
 def Main_Mod(): # Select what to modify 
     option = {1: SuppSelct, 2: ProdSelect, 3: Delsupp, 4: Delprod, 5: Main}
     
@@ -1009,7 +1026,7 @@ def Main_Mod(): # Select what to modify
         dictt = option.get(v)
         dictt()
 
-    l0 = Label(right2, text="Modify", font=("arial-bold", 25))
+    l0 = Label(right2, text="Update", font=("arial-bold", 25))
     l0.grid(row=0, column=0)
 
     b1 = Button(right2, text="Supplier", width=12, **button_format, command=lambda *args: Comon(1))
@@ -1741,7 +1758,7 @@ def View(Type): # Control what to View
         demodb.close()
 
     elif Type == 2:  # Products
-        right.grid(row=0,column=0,padx=200,pady=45)
+        right.grid(row=0,column=0,padx=160,pady=45)
         cursor.execute(f"SELECT ProdID, Name, Stock, SP, Hide FROM product")
         prod = list(cursor.fetchall())
         lst2 = prod
@@ -1877,7 +1894,7 @@ def View(Type): # Control what to View
         demodb.close()
 
     elif Type == 4:  # Customers
-        right.grid(row=0,column=0,padx=200,pady=45)
+        right.grid(row=0,column=0,padx=160,pady=45)
         cursor.execute(f"SELECT CustID,Name,Qty,Balance,Total FROM cust;")
         cust = list(cursor.fetchall())
         lst2 = cust
@@ -2161,7 +2178,7 @@ def Bill_View(BillID, Date): # View Bills
     button3.grid(row=3, column=0, sticky=E, pady=10, padx=10)
 
 def Cust_View(CustID): # View Customers
-    right.grid(row=0,column=0,padx=0,pady=0)
+    right.grid(row=0,column=0,padx=60,pady=80)
 
     right1 = Frame(right, bd=2, relief=SOLID, padx=20, pady=20)
     right1.pack()
@@ -2278,7 +2295,6 @@ window = Tk()
 menu = Menu(window,background=bgcol)
 menu.add_command(label="Bulk Entry", command=sql_csv)
 menu.add_command(label="Repair", command=Ins.install_Old)
-menu.add_command(label="Search", command=Search)
 menu.add_separator()
 menu.add_command(label="Help", command=Helpwind)
 menu.add_command(label="Exit", command=exit_prog)

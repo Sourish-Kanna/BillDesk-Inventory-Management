@@ -1,0 +1,6 @@
+.venv
+.vscode
+modules/save.temp
+Old Project Files
+modules/__pycache__
+Bills
