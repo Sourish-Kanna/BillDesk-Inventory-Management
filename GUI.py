@@ -23,6 +23,7 @@ from tkinter import *
 """ Constants """
 pas, us = Pas.Pass()
 bgcol:str = "#add8e6"
+Company:str = "A. Somasundara Nadar & Co."
 text_format:tuple = ("arial", 14)
 unitlst:tuple = ('Select Unit', 'Kgs', 'Nos')
 button_format:dict = {"bg":"brown", "fg":"white", "font":text_format}
@@ -177,7 +178,7 @@ def Main(): # Home Screen
     right.grid(column=0,row=1,padx=0,pady=0)
     right0 = Frame(right, bd=2, relief=SOLID, padx=50, pady=50)
     right0.pack(pady=20)
-    lab = Label(window, text="A. Somasundara Nadar & Co.", bg=bgcol, font=("arial-bold", 25))
+    lab = Label(window, text= Company, bg=bgcol, font=("arial-bold", 25))
     lab.grid(column=0,row=0,ipadx=275,ipady=20)
     
     def Comon(v):

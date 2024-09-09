@@ -63,6 +63,10 @@ def Pass():
     window.title("Password")
     window.attributes('-topmost', True)
     window.config(bg=bgcol)
+    if __name__ == '__main__':
+        window.iconbitmap(r'1.ico')
+    else:
+        window.iconbitmap(r'modules/1.ico')
     window.focus_force()
 
     pas = tk.StringVar()
