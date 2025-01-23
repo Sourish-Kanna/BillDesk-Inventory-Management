@@ -1,31 +1,90 @@
-# This Software is developed for A. Somasundara Nadar & Co., Kadayam, Tenkasi Dist., Tamil Nadu
+# Billing and Inventory Management Application
 
-The application offers a user-friendly interface for managing suppliers, products, and billing. It provides features like easy installation, multiple user support, data import/export, and efficient billing processes. Users can view detailed information about suppliers, products, and bills, as well as track customer payments. The application also ensures data security with double encryption for saved passwords.
+## Developed for:
+**A. Somasundara Nadar & Co., Kadayam, Tenkasi Dist., Tamil Nadu**
 
-## Key Features
+This application is an all-in-one solution designed to streamline business operations for **A. Somasundara Nadar & Co.**, enabling efficient inventory management, customer billing, and credit tracking.
 
-1. **Prerequisite Installation**:
-    - It prompts users to that required modules will be installed
-    - User also have option to uninstall modules
-    - Internet connectivity required
-2. **Login & Authentication**:
-    - Supports diffrent user (User should be set in database)
-    - Option to save password for faster login
-    - Password saved are double encrypted
-3. **Importing Data**:
-    - Option to import data from CSV file
-    - Manual input option also available
-    - Imports Supplier detail & Produuct details
-4. **Upadating Data**:
-    - Update Supplier & Product details and supply
-    - Discountiue Supplier & Product
-5. **Viewing Data**:
-    - View Suppliers & Products (Discontiued Included).
-    - View genrated Bills (Overview & Detailed)
-    - View Customer detail and pending payments
-6. **Billing**:
-    - Designed to streamline the billing process efficiently
-    - Key binding are used (Enter,Shift R,Shift L)
-    - Added items are displayed at bottom panel
-    - Side panel has required buttons
-    - Top panel has input fields
+---
+
+## Key Features:
+
+1. **Prerequisite Installation:**
+    - Automatically prompts users to install required modules.
+    - Users also have the option to uninstall modules.
+    - **Internet connectivity is required** for module installation.
+
+2. **Login & Authentication:**
+    - Supports multiple user accounts (users should be pre-configured in the database).
+    - Option to save passwords for faster login.
+    - **Double encryption** ensures secure storage of saved passwords.
+
+3. **Importing Data:**
+    - Allows importing data from **CSV files**.
+    - Also provides a **manual input** option.
+    - Imports **Supplier details** and **Product details**.
+
+4. **Updating Data:**
+    - Allows updating **Supplier** and **Product** details.
+    - Option to **discontinue** Suppliers and Products.
+
+5. **Viewing Data:**
+    - View all **Suppliers** and **Products** (including discontinued items).
+    - View **Generated Bills** with both **overview** and **detailed** views.
+    - View **Customer details** and track **pending payments**.
+
+6. **Billing:**
+    - Streamlines the **billing process** for smooth operation.
+    - Utilizes **keyboard shortcuts** (Enter, Shift + R, Shift + L) for ease of use.
+    - Display of added items at the **bottom panel**.
+    - The **side panel** contains essential buttons for efficient navigation.
+    - The **top panel** includes input fields for quick data entry.
+
+---
+
+## Installation Instructions:
+
+### 1. Clone the Repository:
+```bash
+git clone https://github.com/Sourish-Kanna/Billing-Inventory-Management.git
+```
+
+### 2. Install Prerequisites:
+Run the application and it will prompt for the necessary module installations.
+
+If any modules are missing, the application will notify you and install them automatically. Ensure your internet connection is active during installation.
+
+---
+
+## How to Use:
+
+1. **Login:**
+   - Use the pre-configured user credentials to log in.
+   - You can opt to save your password for quicker logins.
+   - Ensure your credentials are encrypted for security.
+
+2. **Manage Data:**
+   - Import data from CSV files or manually enter details.
+   - Update supplier/product information and discontinue items as necessary.
+
+3. **View Information:**
+   - Access detailed information on suppliers, products, bills, and customer payments.
+
+4. **Generate Bills:**
+   - Add items to a bill using the side panel and generate it using the top panel input fields.
+   - Use keyboard shortcuts to streamline the process.
+
+---
+
+## Data Security:
+- The application ensures the highest level of security with **double encryption** for saved passwords.
+
+---
+
+## Future Updates:
+- Adding more features like **advanced reporting**, **sales analytics**, and **real-time inventory tracking**.
+
+---
+
+## License:
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
