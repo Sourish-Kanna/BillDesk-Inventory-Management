@@ -1,11 +1,11 @@
 # Billing and Inventory Management Application
 
-## Developed for:
-**A. Somasundara Nadar & Co., Kadayam, Tenkasi Dist., Tamil Nadu**
+## 🎥 [Watch Product Demo](https://drive.google.com/file/d/1bZaGNWHR35TNWC6lCmvsHclzsD-x0Dsr/view?usp=drive_link)
+
+## Developed for: **A. Somasundara Nadar & Co., Kadayam, Tenkasi Dist., Tamil Nadu**
 
 This application is an all-in-one solution designed to streamline business operations for **A. Somasundara Nadar & Co.**, enabling efficient inventory management, customer billing, and credit tracking.
 
----
 
 ## Key Features:
 
